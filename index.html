@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIT — Sistema de Inventario Traesa</title>
+  <meta name="description" content="Sistema de Inventario Tecnológico de Traesa. Escanea el código QR para ver la ficha técnica del dispositivo." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #ea580c;
+      --accent2: #f97316;
+      --bg: #0a0a14;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #f1f5f9;
+      --muted: rgba(255,255,255,0.45);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(234,88,12,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(249,115,22,0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    /* Logo */
+    .logo-wrap {
+      margin-bottom: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 32px rgba(234,88,12,0.35);
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 32px rgba(234,88,12,0.35); }
+      50% { box-shadow: 0 0 48px rgba(234,88,12,0.55); }
+    }
+
+    .logo-icon svg { width: 32px; height: 32px; color: white; }
+
+    .logo-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 40%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 400;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* States */
+    .state { display: none; flex-direction: column; align-items: center; gap: 16px; }
+    .state.active { display: flex; }
+
+    /* Spinner */
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(234,88,12,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .state-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .state-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    /* Asset badge */
+    .asset-badge {
+      background: rgba(234,88,12,0.12);
+      border: 1px solid rgba(234,88,12,0.25);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent2);
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* Login button */
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.2s, transform 0.2s;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+
+    .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+
+    .ms-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Success icon */
+    .success-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px rgba(34,197,94,0.4);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 20px;
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+
+    /* Progress bar for redirect */
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      animation: fill-bar 1.5s ease-out forwards;
+    }
+    @keyframes fill-bar { from { width: 0%; } to { width: 100%; } }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Logo -->
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" />
+      </svg>
+    </div>
+    <div>
+      <div class="logo-title">SIT</div>
+      <div class="logo-sub">Sistema de Inventario Traesa</div>
+    </div>
+  </div>
+
+  <!-- Card with states -->
+  <div class="card">
+
+    <!-- State: loading -->
+    <div class="state active" id="state-loading">
+      <div class="spinner"></div>
+      <div class="state-title">Iniciando…</div>
+      <div class="state-desc">Verificando tu sesión de Microsoft 365</div>
+    </div>
+
+    <!-- State: needs login -->
+    <div class="state" id="state-login">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(234,88,12,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      <div class="state-title">Iniciar sesión requerido</div>
+      <div class="state-desc" id="login-asset-msg">Inicia sesión con tu cuenta de Office 365 para ver la información del dispositivo.</div>
+      <div class="asset-badge" id="login-asset-id" style="display:none"></div>
+      <button class="btn-login" id="btn-login">
+        <svg class="ms-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+          <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+          <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+          <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+        </svg>
+        Iniciar sesión con Microsoft
+      </button>
+    </div>
+
+    <!-- State: redirecting -->
+    <div class="state" id="state-redirect">
+      <div class="success-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="state-title">¡Autenticado!</div>
+      <div class="state-desc">Abriendo la ficha técnica…</div>
+      <div class="asset-badge" id="redirect-asset-id" style="display:none"></div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+    </div>
+
+    <!-- State: error -->
+    <div class="state" id="state-error">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div class="state-title">Error de acceso</div>
+      <div class="state-desc" id="error-msg">No se pudo completar la autenticación.</div>
+      <button class="btn-login" onclick="location.reload()" style="background:rgba(255,255,255,0.08);margin-top:4px;">
+        Reintentar
+      </button>
+    </div>
+
+  </div>
+
+  <div class="footer">© Traesa · Sistema de Inventario Tecnológico</div>
+</div>
+
+<script>
+  // ── Configuración ────────────────────────────────────────────────────────
+  var CLIENT_ID   = '570dccbe-ae9c-4844-83f9-3475ccc142d8';
+  var TENANT_ID   = '498683cd-67e4-4bb3-a8ba-eac6f675456e';
+  var REDIRECT_URI = 'https://sit.traesa.com';
+  var GAS_URL     = 'https://script.google.com/macros/s/AKfycbyWkxEPMHNMptjaQN3BGjs9spFkaywMnrqgOaeKVuVu/exec';
+
+  // ── Helpers de UI ────────────────────────────────────────────────────────
+  function showState(id) {
+    document.querySelectorAll('.state').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('state-' + id).classList.add('active');
+  }
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+    showState('error');
+  }
+
+  // ── MSAL config ──────────────────────────────────────────────────────────
+  var msalConfig = {
+    auth: {
+      clientId:   CLIENT_ID,
+      authority:  'https://login.microsoftonline.com/' + TENANT_ID,
+      redirectUri: REDIRECT_URI
+    },
+    cache: {
+      cacheLocation: 'sessionStorage',
+      storeAuthStateInCookie: true
+    }
+  };
+
+  var loginRequest = {
+    scopes: ['openid', 'profile', 'email', 'User.Read']
+  };
+
+  // ── Get ?activo= from URL ────────────────────────────────────────────────
+  var urlParams = new URLSearchParams(window.location.search);
+  var activo = (urlParams.get('activo') || '').toUpperCase().trim();
+
+  // ── Main logic ───────────────────────────────────────────────────────────
+  async function main() {
+    try {
+      var msalInstance = new msal.PublicClientApplication(msalConfig);
+      await msalInstance.initialize();
+
+      // Handle redirect response (returning from Microsoft login)
+      var response = null;
+      try {
+        response = await msalInstance.handleRedirectPromise();
+      } catch (redirectErr) {
+        showError('Error al procesar el inicio de sesión: ' + redirectErr.message);
+        return;
+      }
+
+      var account = null;
+
+      if (response && response.account) {
+        // Just returned from Microsoft login
+        account = response.account;
+      } else {
+        // Check if there's an existing session
+        var accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          account = accounts[0];
+        }
+      }
+
+      if (!account) {
+        // Not authenticated — show login button
+        if (activo) {
+          document.getElementById('login-asset-id').textContent = activo;
+          document.getElementById('login-asset-id').style.display = 'block';
+          document.getElementById('login-asset-msg').textContent =
+            'Inicia sesión con tu cuenta de Office 365 para ver la ficha técnica del dispositivo:';
+        }
+        document.getElementById('btn-login').addEventListener('click', function() {
+          msalInstance.loginRedirect({
+            scopes: loginRequest.scopes,
+            redirectUri: REDIRECT_URI,
+            state: activo ? JSON.stringify({ activo: activo }) : undefined
+          });
+        });
+        showState('login');
+        return;
+      }
+
+      // ── Authenticated: redirect to SIT app ───────────────────────────────
+      var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
+
+      // Show activo in redirect state
+      if (activo) {
+        document.getElementById('redirect-asset-id').textContent = activo;
+        document.getElementById('redirect-asset-id').style.display = 'block';
+      }
+      showState('redirect');
+
+      // Build target URL
+      var target = GAS_URL;
+      var params = [];
+      if (activo)  params.push('activo=' + encodeURIComponent(activo));
+      if (email)   params.push('hint='   + encodeURIComponent(email));
+      if (params.length) target += '?' + params.join('&');
+
+      // Redirect after animation completes
+      setTimeout(function() {
+        window.location.href = target;
+      }, 1500);
+
+    } catch (err) {
+      console.error('[SIT] Auth error:', err);
+      showError(err.message || 'Error inesperado. Intenta de nuevo.');
+    }
+  }
+
+  main();
+</script>
+</body>
+</html>
