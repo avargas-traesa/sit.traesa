@@ -572,7 +572,7 @@
     </div>
     <div>
       <div class="logo-title">SIT</div>
-      <div class="logo-sub">Sistema de Inventario Traesa</div>
+      <div class="logo-sub">Sistema de Inventario Traesa <span style="background:rgba(234,88,12,0.25);color:rgba(251,146,60,0.9);font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(234,88,12,0.3);letter-spacing:0.04em;vertical-align:middle;">v2.1</span></div>
     </div>
   </div>
 
@@ -627,6 +627,43 @@
       <div class="state-desc" id="error-msg">No se pudo completar la autenticación.</div>
       <button class="btn-login" onclick="location.reload()" style="background:rgba(255,255,255,0.08);margin-top:4px;">
         Reintentar
+      </button>
+    </div>
+
+    <!-- State: welcome (authenticated, no QR scanned) -->
+    <div class="state" id="state-welcome" style="text-align:center;">
+      <div style="width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,rgba(234,88,12,0.25),rgba(251,146,60,0.15));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid rgba(234,88,12,0.3);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="none" stroke="rgba(251,146,60,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="state-title">¡Hola, <span id="welcome-name">Usuario</span>!</div>
+      <div class="state-desc" style="margin-bottom:6px;">Has iniciado sesión correctamente.</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.35);margin-bottom:20px;" id="welcome-email"></div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px 14px;margin-bottom:20px;text-align:left;">
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Cómo usar el portal</div>
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+          <div style="width:24px;height:24px;border-radius:8px;background:rgba(234,88,12,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="rgba(251,146,60,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+          </div>
+          <div>
+            <div style="font-size:0.82rem;color:#fff;font-weight:500;">Escanea el QR de un equipo</div>
+            <div style="font-size:0.76rem;color:rgba(255,255,255,0.45);">La etiqueta QR en cada activo abrirá automáticamente su ficha técnica aquí.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <div style="width:24px;height:24px;border-radius:8px;background:rgba(59,130,246,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="rgba(96,165,250,0.9)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:0.82rem;color:#fff;font-weight:500;">Gestionar inventario completo</div>
+            <div style="font-size:0.76rem;color:rgba(255,255,255,0.45);">Para gestión avanzada, accede al sistema SIDIT con tu usuario y contraseña de Google.</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-login" id="btn-open-sidit-welcome" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;gap:8px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+        Abrir sistema SIDIT completo
       </button>
     </div>
 
@@ -822,13 +859,16 @@
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
       if (!activo) {
-        // No asset code, redirect to the main SIT dashboard
-        showState('redirect');
-        var target = GAS_URL;
-        if (email) target += '?hint=' + encodeURIComponent(email);
-        setTimeout(function() {
-          window.location.href = target;
-        }, 1500);
+        // No asset code — show welcome / instructions screen instead of redirecting
+        var welcomeName = (account.idTokenClaims && (account.idTokenClaims.name || account.idTokenClaims.preferred_username)) || email || 'Usuario';
+        var firstWord = welcomeName.split(' ')[0];
+        document.getElementById('welcome-name').textContent = firstWord;
+        document.getElementById('welcome-email').textContent = email;
+        // Wire up the "open SIDIT" button
+        document.getElementById('btn-open-sidit-welcome').addEventListener('click', function() {
+          window.open(GAS_URL, '_blank');
+        });
+        showState('welcome');
         return;
       }
 
