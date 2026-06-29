@@ -216,6 +216,347 @@
       animation: fill-bar 1.5s ease-out forwards;
     }
     @keyframes fill-bar { from { width: 0%; } to { width: 100%; } }
+
+    /* Ficha Técnica Styles */
+    .container.wide {
+      max-width: 650px;
+      transition: max-width 0.4s ease;
+    }
+    
+    .details-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+    
+    .details-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-estado {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-estado.disponible {
+      background: rgba(34,197,94,0.15);
+      color: #4ade80;
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+    .badge-estado.asignado {
+      background: rgba(59,130,246,0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59,130,246,0.3);
+    }
+    .badge-estado.de-baja, .badge-estado.dado-de-baja {
+      background: rgba(239,68,68,0.15);
+      color: #f87171;
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    @media (max-width: 500px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .info-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+    .info-value {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #fff;
+    }
+
+    /* Garantía */
+    .garantia-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .garantia-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      width: fit-content;
+    }
+    .garantia-vigente {
+      background: rgba(34,197,94,0.12);
+      color: #4ade80;
+      border: 1px solid rgba(34,197,94,0.25);
+    }
+    .garantia-por-expirar {
+      background: rgba(245,158,11,0.12);
+      color: #fbbf24;
+      border: 1px solid rgba(245,158,11,0.25);
+    }
+    .garantia-expirada {
+      background: rgba(239,68,68,0.12);
+      color: #f87171;
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+    .garantia-sin-registro {
+      background: rgba(156,163,175,0.12);
+      color: #d1d5db;
+      border: 1px solid rgba(156,163,175,0.25);
+    }
+    .badge-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Fotos section */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #fff;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+    
+    .media-section {
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 12px;
+    }
+    
+    .media-item {
+      position: relative;
+      aspect-ratio: 4/3;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(0,0,0,0.2);
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .media-item:hover {
+      transform: scale(1.02);
+      border-color: var(--accent);
+    }
+    .media-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .media-item-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      font-size: 0.68rem;
+      padding: 4px 6px;
+      text-align: center;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Timeline styles */
+    .timeline-container {
+      position: relative;
+      margin-top: 16px;
+      padding-left: 20px;
+    }
+    .timeline-container::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 5px;
+      bottom: 5px;
+      width: 2px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .timeline-node {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .timeline-node:last-child {
+      margin-bottom: 0;
+    }
+    .timeline-dot {
+      position: absolute;
+      left: -20px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #0a0a14;
+      border: 2px solid #9ca3af;
+      box-shadow: 0 0 0 3px #0a0a14;
+    }
+    
+    .timeline-node.ingreso .timeline-dot { border-color: #22c55e; }
+    .timeline-node.asignacion .timeline-dot { border-color: #06b6d4; }
+    .timeline-node.reasignacion .timeline-dot { border-color: #f59e0b; }
+    .timeline-node.transferencia .timeline-dot { border-color: #a78bfa; }
+    .timeline-node.devolucion .timeline-dot { border-color: #fbbf24; }
+    .timeline-node.baja .timeline-dot { border-color: #ef4444; }
+    
+    .timeline-card {
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .timeline-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .timeline-node.ingreso .timeline-title { color: #4ade80; }
+    .timeline-node.asignacion .timeline-title { color: #06b6d4; }
+    .timeline-node.reasignacion .timeline-title { color: #f59e0b; }
+    .timeline-node.transferencia .timeline-title { color: #a78bfa; }
+    .timeline-node.devolucion .timeline-title { color: #fbbf24; }
+    .timeline-node.baja .timeline-title { color: #f87171; }
+    
+    .timeline-time {
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .timeline-desc {
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      line-height: 1.4;
+    }
+    .timeline-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .timeline-note {
+      margin-top: 6px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+    .timeline-note.firma {
+      background: rgba(6,182,212,0.08);
+      border-left: 2px solid #06b6d4;
+      color: #06b6d4;
+    }
+    .timeline-note.factura {
+      background: rgba(243,112,33,0.08);
+      border-left: 2px solid #f97316;
+      color: #f97316;
+    }
+
+    /* Lightbox Modal */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 10, 0.9);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .lightbox.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .lightbox-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lightbox-img {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      cursor: zoom-in;
+      transition: transform 0.2s ease;
+    }
+    .lightbox-img.zoomed {
+      transform: scale(1.5);
+      cursor: zoom-out;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -40px;
+      right: 0;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+    .lightbox-close:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    
+    .btn-action-panel {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
   </style>
 </head>
 <body>
@@ -289,9 +630,93 @@
       </button>
     </div>
 
+    <!-- State: asset-details -->
+    <div class="state" id="state-details" style="text-align: left; width: 100%;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+        <div>
+          <h2 class="details-title" id="det-activo-id">TECE-0000</h2>
+          <div class="details-subtitle">
+            <span id="det-activo-categoria">Laptop</span>
+            <span>•</span>
+            <span id="det-activo-empresa">Constructora Traesa</span>
+          </div>
+        </div>
+        <span class="badge-estado" id="det-activo-estado">Disponible</span>
+      </div>
+
+      <div class="garantia-card" id="det-garantia-container">
+        <div class="info-label">Garantía del Fabricante</div>
+        <div id="det-activo-garantia"></div>
+      </div>
+
+      <div class="section-title">Información del Activo</div>
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-label">Marca y Modelo</div>
+          <div class="info-value" id="det-activo-marca-modelo">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Número de Serie</div>
+          <div class="info-value" id="det-activo-serie">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Responsable Actual</div>
+          <div class="info-value" id="det-activo-responsable">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Proveedor</div>
+          <div class="info-value" id="det-activo-proveedor">-</div>
+        </div>
+        <div class="info-card">
+          <div class="info-label">Precio y Fecha</div>
+          <div class="info-value" id="det-activo-precio-fecha">-</div>
+        </div>
+        <div class="info-card" id="det-so-container" style="display: none;">
+          <div class="info-label">Sistema Operativo</div>
+          <div class="info-value" id="det-activo-so">-</div>
+        </div>
+        <div class="info-card" id="det-imei-container" style="display: none;">
+          <div class="info-label">IMEIs</div>
+          <div class="info-value" id="det-activo-imeis">-</div>
+        </div>
+        <div class="info-card" id="det-specs-container" style="display: none;">
+          <div class="info-label">Especificaciones Técnicas</div>
+          <div class="info-value" id="det-activo-specs">-</div>
+        </div>
+      </div>
+
+      <div class="media-section" id="det-media-section" style="display: none;">
+        <div class="section-title">Evidencia y Comprobantes</div>
+        <div class="media-grid" id="det-media-grid"></div>
+      </div>
+
+      <div class="media-section">
+        <div class="section-title">Historial de Movimientos</div>
+        <div class="timeline-container" id="det-timeline"></div>
+      </div>
+
+      <!-- Action Panel: allows admins to open full SIDIT app -->
+      <div class="btn-action-panel">
+        <button class="btn-login" id="btn-open-sidit" style="margin-top: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:16px; height:16px; flex-shrink:0;">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+          </svg>
+          Gestionar en SIDIT
+        </button>
+      </div>
+    </div>
+
   </div>
 
   <div class="footer">© Traesa · Sistema de Inventario Tecnológico</div>
+</div>
+
+<!-- Lightbox Modal -->
+<div class="lightbox" id="det-lightbox">
+  <div class="lightbox-content">
+    <button class="lightbox-close" onclick="cerrarLightbox()">&times;</button>
+    <img class="lightbox-img" id="det-lightbox-img" src="" alt="Ampliado">
+  </div>
 </div>
 
 <script>
@@ -349,6 +774,18 @@
         return;
       }
 
+      // Recover activo from state query parameter in MSAL redirection if present
+      if (response && response.state) {
+        try {
+          var stateObj = JSON.parse(response.state);
+          if (stateObj && stateObj.activo) {
+            activo = stateObj.activo.toUpperCase().trim();
+          }
+        } catch (stateErr) {
+          console.warn('[SIT] Error parsing MSAL state:', stateErr);
+        }
+      }
+
       var account = null;
 
       if (response && response.account) {
@@ -381,33 +818,496 @@
         return;
       }
 
-      // ── Authenticated: redirect to SIT app ───────────────────────────────
+      // ── Authenticated: Fetch details or redirect ─────────────────────────
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
-      // Show activo in redirect state
-      if (activo) {
-        document.getElementById('redirect-asset-id').textContent = activo;
-        document.getElementById('redirect-asset-id').style.display = 'block';
+      if (!activo) {
+        // No asset code, redirect to the main SIT dashboard
+        showState('redirect');
+        var target = GAS_URL;
+        if (email) target += '?hint=' + encodeURIComponent(email);
+        setTimeout(function() {
+          window.location.href = target;
+        }, 1500);
+        return;
       }
-      showState('redirect');
 
-      // Build target URL
-      var target = GAS_URL;
-      var params = [];
-      if (activo)  params.push('activo=' + encodeURIComponent(activo));
-      if (email)   params.push('hint='   + encodeURIComponent(email));
-      if (params.length) target += '?' + params.join('&');
+      // We have active asset code. Fetch details in background from Apps Script JSON API.
+      showState('loading');
+      var loadingTitle = document.getElementById('state-loading').querySelector('.state-title');
+      var loadingDesc = document.getElementById('state-loading').querySelector('.state-desc');
+      if (loadingTitle) loadingTitle.textContent = 'Cargando información...';
+      if (loadingDesc) loadingDesc.textContent = 'Buscando el activo ' + activo + ' en el sistema.';
 
-      // Redirect after animation completes
-      setTimeout(function() {
-        window.location.href = target;
-      }, 1500);
+      var fetchUrl = GAS_URL + '?action=buscarActivo&activo=' + encodeURIComponent(activo);
+
+      try {
+        var res = await fetch(fetchUrl);
+        if (!res.ok) {
+          throw new Error('Error de red al consultar el servidor (' + res.status + ')');
+        }
+        var data = await res.json();
+        if (data.success) {
+          renderFichaTecnica(data, email);
+        } else {
+          showError(data.message || 'No se encontró el activo.');
+        }
+      } catch (fetchErr) {
+        console.error('[SIT] Fetch error:', fetchErr);
+        showError('No se pudo obtener la información: ' + (fetchErr.message || fetchErr));
+      }
 
     } catch (err) {
       console.error('[SIT] Auth error:', err);
       showError(err.message || 'Error inesperado. Intenta de nuevo.');
     }
   }
+
+  // ── Helpers de Ficha Técnica, Timeline y Lightbox ──────────────────────
+  function renderFichaTecnica(data, email) {
+    // 1. Expand container and enable body scrolling
+    document.querySelector('.container').classList.add('wide');
+    document.body.style.overflow = 'auto';
+
+    // 2. Set header fields
+    document.getElementById('det-activo-id').textContent = data.equipo.id;
+    document.getElementById('det-activo-categoria').textContent = data.equipo.categoria;
+    document.getElementById('det-activo-empresa').textContent = data.equipo.empresa || 'Constructora Traesa';
+    
+    // Estado badge
+    var estado = data.equipo.estado || 'Disponible';
+    var badgeEstado = document.getElementById('det-activo-estado');
+    badgeEstado.textContent = estado;
+    
+    // Normalise class name
+    var cleanEstado = estado.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '');
+    badgeEstado.className = 'badge-estado ' + cleanEstado;
+
+    // 3. Warranty computation
+    var wResult = calcularGarantia(data.equipo.fechaCompra, data.equipo.garantiaAnos);
+    var wBadge = '';
+    if (wResult.cssClass === 'garantia-vigente') {
+      wBadge = '<span class="garantia-badge garantia-vigente"><svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>' + wResult.message + '</span></span>';
+    } else if (wResult.cssClass === 'garantia-por-expirar') {
+      wBadge = '<span class="garantia-badge garantia-por-expirar"><svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>' + wResult.message + '</span></span>';
+    } else if (wResult.cssClass === 'garantia-expirada') {
+      wBadge = '<span class="garantia-badge garantia-expirada"><svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>' + wResult.message + '</span></span>';
+    } else {
+      wBadge = '<span class="garantia-badge garantia-sin-registro"><svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>' + wResult.message + '</span></span>';
+    }
+    document.getElementById('det-activo-garantia').innerHTML = wBadge;
+
+    // 4. Fill info cards
+    document.getElementById('det-activo-marca-modelo').textContent = (data.equipo.marca || '') + ' ' + (data.equipo.modelo || '');
+    document.getElementById('det-activo-serie').textContent = data.equipo.serie || 'S/N';
+    document.getElementById('det-activo-responsable').textContent = data.equipo.asignadoA || 'Stock Disponible (TI)';
+    document.getElementById('det-activo-proveedor').textContent = data.equipo.proveedor || 'Sin Registrar';
+    
+    var precio = data.equipo.precio ? '$' + data.equipo.precio + ' USD' : 'Desconocido';
+    var fecha = data.equipo.fechaCompra || 'Sin Fecha';
+    document.getElementById('det-activo-precio-fecha').textContent = precio + ' / Compra: ' + fecha;
+
+    // 5. Category-specific specs
+    // OS (Laptop)
+    var soContainer = document.getElementById('det-so-container');
+    if (data.equipo.categoria === 'Laptop' && data.equipo.sistemaOperativo) {
+      document.getElementById('det-activo-so').textContent = data.equipo.sistemaOperativo;
+      soContainer.style.display = 'block';
+    } else {
+      soContainer.style.display = 'none';
+    }
+
+    // IMEIs (Celular)
+    var imeiContainer = document.getElementById('det-imei-container');
+    if (data.equipo.imei1 || data.equipo.imei2) {
+      var imeis = [];
+      if (data.equipo.imei1) imeis.push('IMEI 1: ' + data.equipo.imei1);
+      if (data.equipo.imei2) imeis.push('IMEI 2: ' + data.equipo.imei2);
+      document.getElementById('det-activo-imeis').textContent = imeis.join(' | ');
+      imeiContainer.style.display = 'block';
+    } else {
+      imeiContainer.style.display = 'none';
+    }
+
+    // Specifications from creation details
+    var specsContainer = document.getElementById('det-specs-container');
+    var creationLog = (data.historial || []).find(function(h) {
+      return h.tipo === 'Creación' || h.tipo === 'Creacion' || h.tipo === 'Ingreso';
+    });
+    var creationDetails = creationLog ? creationLog.detalles : '';
+    var extractedSpecs = '';
+    if (creationDetails) {
+      var parts = creationDetails.split(/fotografías de estado\.\s*|fotografias de estado\.\s*/);
+      if (parts.length > 1) {
+        extractedSpecs = parts[1].split('.')[0].trim();
+      }
+    }
+    if (extractedSpecs) {
+      document.getElementById('det-activo-specs').textContent = extractedSpecs;
+      specsContainer.style.display = 'block';
+    } else {
+      specsContainer.style.display = 'none';
+    }
+
+    // 6. Media / Evidencias
+    var mediaGrid = document.getElementById('det-media-grid');
+    mediaGrid.innerHTML = '';
+    var hasMedia = false;
+
+    if (data.equipo.facturaFoto) {
+      addMediaItem(mediaGrid, data.equipo.facturaFoto, 'Factura de Compra');
+      hasMedia = true;
+    }
+    if (data.equipo.cajaFoto) {
+      addMediaItem(mediaGrid, data.equipo.cajaFoto, 'Caja / Embalaje');
+      hasMedia = true;
+    }
+    if (data.fotosEstado && data.fotosEstado.length > 0) {
+      data.fotosEstado.forEach(function(fotoUrl, idx) {
+        addMediaItem(mediaGrid, fotoUrl, 'Foto de Estado ' + (idx + 1));
+        hasMedia = true;
+      });
+    }
+    if (data.equipo.estado === 'Asignado' && data.firmaActiva) {
+      if (data.firmaActiva.urlFirma) {
+        addMediaItem(mediaGrid, data.firmaActiva.urlFirma, 'Firma de Aceptación');
+        hasMedia = true;
+      }
+      if (data.firmaActiva.urlSelfie) {
+        addMediaItem(mediaGrid, data.firmaActiva.urlSelfie, 'Selfie Colaborador');
+        hasMedia = true;
+      }
+    }
+
+    if (hasMedia) {
+      document.getElementById('det-media-section').style.display = 'block';
+    } else {
+      document.getElementById('det-media-section').style.display = 'none';
+    }
+
+    // 7. Timeline / Historial
+    var timeline = document.getElementById('det-timeline');
+    timeline.innerHTML = '';
+    if (!data.historial || data.historial.length === 0) {
+      timeline.innerHTML = '<p style="font-size: 0.8rem; color: var(--muted); padding-left: 8px;">No se registran movimientos en el historial.</p>';
+    } else {
+      var _TIPOS_INTERNOS = [
+        'reserva remota', 'transferencia remota',
+        'firma remota completada', 'transferencia completada (firma remota)'
+      ];
+      var _esInterno = function(tipo) {
+        var t = (tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return _TIPOS_INTERNOS.some(function(k) { return t.includes(k); }) || t === 'modificacion';
+      };
+      var _normalizarTipo = function(tipo) {
+        var t = (tipo || '').trim();
+        var tl = t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (tl === 'creacion' || tl === 'ingreso') return 'INGRESO';
+        if (tl === 'asignacion') return 'ASIGNACIÓN';
+        if (tl === 'reasignacion') return 'REASIGNACIÓN';
+        if (tl === 'transferencia') return 'TRANSFERENCIA';
+        if (tl === 'devolucion') return 'DEVOLUCIÓN';
+        if (tl === 'baja' || tl === 'dado de baja') return 'DADO DE BAJA';
+        return t.toUpperCase();
+      };
+      var getTimelineClass = function(tipo) {
+        if (!tipo) return 'ingreso';
+        var clean = tipo.replace(/\s*\(Firma Remota\)/gi, '').trim()
+          .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (clean === 'ingreso' || clean.includes('creacion') || clean.includes('registro')) return 'ingreso';
+        if (clean === 'reasignacion' || clean.includes('reasignacion')) return 'reasignacion';
+        if (clean === 'asignacion' || clean.includes('asignacion') || clean.includes('entrega')) return 'asignacion';
+        if (clean.includes('transferencia') || clean.includes('traslado') || clean.includes('cambio')) return 'transferencia';
+        if (clean.includes('devolucion') || clean.includes('retorno') || clean.includes('devuelto')) return 'devolucion';
+        if (clean.includes('dado de baja') || clean.includes('baja') || clean.includes('retiro')) return 'baja';
+        return clean.replace(/\s+/g, '-');
+      };
+
+      var _entriesInternas = [];
+      var _entriesVisibles = [];
+      data.historial.forEach(function(h) {
+        if (_esInterno(h.tipo)) {
+          _entriesInternas.push(h);
+        } else {
+          _entriesVisibles.push(Object.assign({}, h, {
+            esFirmaRemota: false,
+            notaFactura: null,
+            notaFirmaRemota: null
+          }));
+        }
+      });
+
+      _entriesInternas.forEach(function(interna) {
+        var tipoI = (interna.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        var esFirmaCompleta = tipoI.includes('firma remota completada') || tipoI.includes('transferencia completada');
+        if (!esFirmaCompleta) return;
+        var fusionado = false;
+        for (var j = _entriesVisibles.length - 1; j >= 0; j--) {
+          var cand = _entriesVisibles[j];
+          var tipoC = (cand.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if ((tipoC.includes('asignacion') || tipoC.includes('reasignacion') || tipoC.includes('transferencia')) &&
+              cand.destino === interna.destino) {
+            cand.esFirmaRemota = true;
+            cand.idDocumento = interna.idMovimiento;
+            cand.notaFirmaRemota = '✍️ Firma completada remotamente el ' + (interna.fecha || '');
+            fusionado = true;
+            break;
+          }
+        }
+        if (!fusionado) {
+          var tipoPromovido = tipoI.includes('transferencia') ? 'Transferencia' : 'Asignación';
+          _entriesVisibles.push(Object.assign({}, interna, {
+            tipo: tipoPromovido,
+            esFirmaRemota: true,
+            idDocumento: interna.idMovimiento,
+            notaFirmaRemota: null,
+            notaFactura: null
+          }));
+        }
+      });
+
+      _entriesInternas.forEach(function(interna) {
+        var tipoI = (interna.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (tipoI !== 'reserva remota' && tipoI !== 'transferencia remota') return;
+        var tieneComplecion = _entriesInternas.some(function(otra) {
+          var tipoO = (otra.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return (tipoO.includes('firma remota completada') || tipoO.includes('transferencia completada')) &&
+                 otra.destino === interna.destino;
+        });
+        if (!tieneComplecion) {
+          var tipoPendiente = tipoI === 'transferencia remota' ? 'Transferencia' : 'Asignación';
+          _entriesVisibles.push(Object.assign({}, interna, {
+            tipo: tipoPendiente,
+            esFirmaRemota: false,
+            notaFirmaRemota: '⏳ Firma remota pendiente',
+            notaFactura: null,
+            idDocumento: null
+          }));
+        }
+      });
+
+      _entriesInternas.forEach(function(interna) {
+        var tipoI = (interna.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        if (tipoI !== 'modificacion') return;
+        for (var j = _entriesVisibles.length - 1; j >= 0; j--) {
+          var tipoC = (_entriesVisibles[j].tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          if (tipoC === 'ingreso' || tipoC === 'creacion') {
+            _entriesVisibles[j].notaFactura = '📎 Factura actualizada el ' + (interna.fecha || '') + '. ' + (interna.detalles || '');
+            break;
+          }
+        }
+      });
+
+      _entriesVisibles.sort(function(a, b) {
+        var fA = a.fecha ? new Date(a.fecha) : new Date(0);
+        var fB = b.fecha ? new Date(b.fecha) : new Date(0);
+        return fB - fA;
+      });
+
+      _entriesVisibles.forEach(function(hist) {
+        var tipoDisplay = _normalizarTipo(hist.tipo) + (hist.esFirmaRemota ? ' (Firma Remota)' : '');
+        var nodeClass = getTimelineClass(tipoDisplay);
+        
+        var node = document.createElement('div');
+        node.className = 'timeline-node ' + nodeClass;
+        
+        var dot = document.createElement('div');
+        dot.className = 'timeline-dot';
+        
+        var card = document.createElement('div');
+        card.className = 'timeline-card';
+        
+        var header = document.createElement('div');
+        header.className = 'timeline-header';
+        
+        var title = document.createElement('span');
+        title.className = 'timeline-title';
+        title.textContent = tipoDisplay;
+        
+        var time = document.createElement('span');
+        time.className = 'timeline-time';
+        time.textContent = hist.fecha || '';
+        
+        header.appendChild(title);
+        header.appendChild(time);
+        card.appendChild(header);
+        
+        var desc = document.createElement('div');
+        desc.className = 'timeline-desc';
+        desc.textContent = hist.detalles || '';
+        card.appendChild(desc);
+        
+        if (hist.notaFirmaRemota) {
+          var note = document.createElement('div');
+          note.className = 'timeline-note';
+          note.style.marginTop = '6px';
+          note.style.padding = '4px 8px';
+          note.style.borderRadius = '4px';
+          note.style.fontSize = '0.7rem';
+          note.style.background = 'rgba(6,182,212,0.08)';
+          note.style.borderLeft = '2px solid #06b6d4';
+          note.style.color = '#06b6d4';
+          note.textContent = hist.notaFirmaRemota;
+          card.appendChild(note);
+        }
+        if (hist.notaFactura) {
+          var note = document.createElement('div');
+          note.className = 'timeline-note';
+          note.style.marginTop = '6px';
+          note.style.padding = '4px 8px';
+          note.style.borderRadius = '4px';
+          note.style.fontSize = '0.7rem';
+          note.style.background = 'rgba(243,112,33,0.08)';
+          note.style.borderLeft = '2px solid #f97316';
+          note.style.color = '#f97316';
+          note.textContent = hist.notaFactura;
+          card.appendChild(note);
+        }
+        
+        var meta = document.createElement('div');
+        meta.className = 'timeline-meta';
+        meta.innerHTML = 'Origen: <strong>' + (hist.origen || '-') + '</strong> &rarr; Destino: <strong>' + (hist.destino || '-') + '</strong><br>Autorizado por: ' + (hist.responsable || 'TI');
+        card.appendChild(meta);
+        
+        node.appendChild(dot);
+        node.appendChild(card);
+        timeline.appendChild(node);
+      });
+    }
+
+    // 8. Open in SIDIT handler
+    document.getElementById('btn-open-sidit').onclick = function() {
+      var target = GAS_URL;
+      var params = [];
+      if (data.equipo.id) params.push('activo=' + encodeURIComponent(data.equipo.id));
+      if (email) params.push('hint=' + encodeURIComponent(email));
+      if (params.length) target += '?' + params.join('&');
+      window.location.href = target;
+    };
+
+    // 9. Show details state
+    showState('details');
+  }
+
+  function addMediaItem(container, url, label) {
+    var directUrl = getDriveDirectImageUrl(url, 'w1000');
+    var thumbUrl = getDriveDirectImageUrl(url, 'w200');
+    
+    var div = document.createElement('div');
+    div.className = 'media-item';
+    div.onclick = function() { abrirLightbox(directUrl); };
+    
+    var img = document.createElement('img');
+    img.src = thumbUrl;
+    img.alt = label;
+    img.loading = 'lazy';
+    
+    var labelDiv = document.createElement('div');
+    labelDiv.className = 'media-item-label';
+    labelDiv.textContent = label;
+    
+    div.appendChild(img);
+    div.appendChild(labelDiv);
+    container.appendChild(div);
+  }
+
+  function getDriveDirectImageUrl(url, size) {
+    if (!url) return '';
+    if (!url.includes('drive.google.com')) return url;
+    var match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      var sz = size ? size : 'w1000';
+      return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=' + sz;
+    }
+    return url;
+  }
+
+  function formatDateSimple(date) {
+    var yyyy = date.getFullYear();
+    var mm = String(date.getMonth() + 1).padStart(2, '0');
+    var dd = String(date.getDate()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd;
+  }
+
+  function calcularGarantia(fechaCompra, garantiaAnos) {
+    if (!fechaCompra || garantiaAnos === undefined || garantiaAnos === null || garantiaAnos <= 0) {
+      return { status: 'Sin Registro', cssClass: 'garantia-sin-registro', icon: 'shield-alert', message: 'Sin Garantía Registrada' };
+    }
+    
+    var dateParts = fechaCompra.split('-');
+    if (dateParts.length !== 3) {
+      return { status: 'Sin Registro', cssClass: 'garantia-sin-registro', icon: 'shield-alert', message: 'Sin Garantía Registrada' };
+    }
+    
+    var purchaseDate = new Date(parseInt(dateParts[0], 10), parseInt(dateParts[1], 10) - 1, parseInt(dateParts[2], 10));
+    var msInYear = 365.25 * 24 * 60 * 60 * 1000;
+    var warrantyMs = garantiaAnos * msInYear;
+    var expirationDate = new Date(purchaseDate.getTime() + warrantyMs);
+    
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    
+    var expDateMidnight = new Date(expirationDate);
+    expDateMidnight.setHours(0,0,0,0);
+    
+    var diffMs = expDateMidnight.getTime() - today.getTime();
+    var diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    
+    if (diffDays < 0) {
+      return {
+        status: 'Expirada',
+        cssClass: 'garantia-expirada',
+        icon: 'shield-off',
+        message: 'Expirada (Venció el ' + formatDateSimple(expirationDate) + ' - hace ' + Math.abs(diffDays) + ' días)'
+      };
+    } else if (diffDays <= 30) {
+      return {
+        status: 'Por Expirar',
+        cssClass: 'garantia-por-expirar',
+        icon: 'shield-alert',
+        message: 'Por Expirar (Vence el ' + formatDateSimple(expirationDate) + ' - quedan ' + diffDays + ' días)'
+      };
+    } else {
+      return {
+        status: 'Vigente',
+        cssClass: 'garantia-vigente',
+        icon: 'shield',
+        message: 'Vigente (Vence el ' + formatDateSimple(expirationDate) + ' - quedan ' + diffDays + ' días)'
+      };
+    }
+  }
+
+  function abrirLightbox(url) {
+    var lightbox = document.getElementById('det-lightbox');
+    var img = document.getElementById('det-lightbox-img');
+    if (!lightbox || !img) return;
+    img.src = url;
+    img.classList.remove('zoomed');
+    lightbox.classList.add('active');
+  }
+
+  function cerrarLightbox() {
+    var lightbox = document.getElementById('det-lightbox');
+    if (lightbox) {
+      lightbox.classList.remove('active');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var lbImg = document.getElementById('det-lightbox-img');
+    if (lbImg) {
+      lbImg.onclick = function(e) {
+        e.stopPropagation();
+        this.classList.toggle('zoomed');
+      };
+    }
+    var lb = document.getElementById('det-lightbox');
+    if (lb) {
+      lb.onclick = function() {
+        cerrarLightbox();
+      };
+    }
+  });
 
   // ── Carga dinámica de MSAL con múltiples CDN de respaldo ────────────────
   var MSAL_CDNS = [
