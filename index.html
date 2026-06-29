@@ -7,13 +7,7 @@
   <meta name="description" content="Sistema de Inventario Tecnológico de Traesa. Escanea el código QR para ver la ficha técnica del dispositivo." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/dist/msal-browser.min.js"></script>
-  <script>
-    // Fallback CDN if unpkg fails
-    if (typeof msal === 'undefined') {
-      document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/dist/msal-browser.min.js"><\/script>');
-    }
-  </script>
+
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -414,7 +408,32 @@
     }
   }
 
-  main();
+  // ── Carga dinámica de MSAL con múltiples CDN de respaldo ────────────────
+  var MSAL_CDNS = [
+    'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/dist/msal-browser.min.js',
+    'https://unpkg.com/@azure/msal-browser@2.38.3/dist/msal-browser.min.js',
+    'https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js'
+  ];
+
+  function loadMSAL(index) {
+    if (index >= MSAL_CDNS.length) {
+      showError('No se pudo cargar la librería de autenticación. Verifica tu conexión a internet.');
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = MSAL_CDNS[index];
+    s.onload = function() {
+      if (typeof msal !== 'undefined') {
+        main();
+      } else {
+        loadMSAL(index + 1);
+      }
+    };
+    s.onerror = function() { loadMSAL(index + 1); };
+    document.body.appendChild(s);
+  }
+
+  loadMSAL(0);
 </script>
 </body>
 </html>
