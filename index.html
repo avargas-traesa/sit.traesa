@@ -572,7 +572,7 @@
     </div>
     <div>
       <div class="logo-title">SIT</div>
-      <div class="logo-sub">Sistema de Inventario Traesa <span style="background:rgba(234,88,12,0.25);color:rgba(251,146,60,0.9);font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(234,88,12,0.3);letter-spacing:0.04em;vertical-align:middle;">v2.2</span></div>
+      <div class="logo-sub">Sistema de Inventario Traesa <span style="background:rgba(234,88,12,0.25);color:rgba(251,146,60,0.9);font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(234,88,12,0.3);letter-spacing:0.04em;vertical-align:middle;">v2.3</span></div>
     </div>
   </div>
 
@@ -824,13 +824,37 @@
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
       if (!activo) {
-        // No asset code — redirect directly to the main SIT system
+        // No asset code → login directo al sistema SIT via One-Time Token
         showState('redirect');
-        var target = GAS_URL;
-        if (email) target += '?hint=' + encodeURIComponent(email);
-        setTimeout(function() {
-          window.location.href = target;
-        }, 800);
+        var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
+        var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
+        if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
+        if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
+
+        try {
+          // 1. Obtener access_token de Microsoft silenciosamente (ya autenticado)
+          var tokenResp = await msalInstance.acquireTokenSilent({
+            scopes: ['User.Read'],
+            account: account
+          });
+          var accessToken = tokenResp.accessToken;
+
+          // 2. Pedirle al GAS un One-Time Token verificado
+          var ottUrl = GAS_URL + '?action=getOneTimeToken&access_token=' + encodeURIComponent(accessToken);
+          var ottRes  = await fetch(ottUrl);
+          var ottData = await ottRes.json();
+
+          if (ottData.success && ottData.ott) {
+            // 3. Redirigir al sistema SIT con el OTT → entra directo sin segundo login
+            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
+          } else {
+            showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
+          }
+        } catch (ottErr) {
+          console.error('[SIT] OTT error:', ottErr);
+          // Fallback: redirigir directo (el usuario verá la pantalla de login de GAS)
+          window.location.href = GAS_URL;
+        }
         return;
       }
 
