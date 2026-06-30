@@ -706,7 +706,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:16px; height:16px; flex-shrink:0;">
             <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
           </svg>
-          Gestionar en SIDIT
+          Gestionar en SIT
         </button>
       </div>
     </div>
@@ -764,10 +764,13 @@
   var urlParams = new URLSearchParams(window.location.search);
   var activo = (urlParams.get('activo') || '').toUpperCase().trim();
 
+  // ── MSAL instance (global para reutilización en el botón "Gestionar en SIT") ──
+  var msalInstance = null;
+
   // ── Main logic ───────────────────────────────────────────────────────────
   async function main() {
     try {
-      var msalInstance = new msal.PublicClientApplication(msalConfig);
+      msalInstance = new msal.PublicClientApplication(msalConfig);
       await msalInstance.initialize();
 
       // Handle redirect response (returning from Microsoft login)
@@ -1204,14 +1207,34 @@
       });
     }
 
-    // 8. Open in SIDIT handler
-    document.getElementById('btn-open-sidit').onclick = function() {
-      var target = GAS_URL;
-      var params = [];
-      if (data.equipo.id) params.push('activo=' + encodeURIComponent(data.equipo.id));
-      if (email) params.push('hint=' + encodeURIComponent(email));
-      if (params.length) target += '?' + params.join('&');
-      window.location.href = target;
+    // 8. Abrir el SIT completo usando OTT — reutiliza la instancia MSAL global
+    //    Evita la pantalla de login del GAS redirigiendo con token de un solo uso.
+    document.getElementById('btn-open-sidit').onclick = async function() {
+      var btn = document.getElementById('btn-open-sidit');
+      btn.disabled = true;
+      btn.textContent = 'Abriendo SIT…';
+      try {
+        // 1. Reutilizar la instancia MSAL ya inicializada (sin crear una segunda)
+        if (!msalInstance) throw new Error('Instancia MSAL no inicializada');
+        var accounts2 = msalInstance.getAllAccounts();
+        if (!accounts2.length) throw new Error('Sin sesión activa');
+        var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts2[0] });
+        // 2. Pedir OTT al GAS
+        var ottRes = await fetch(GAS_URL + '?action=getOneTimeToken&access_token=' + encodeURIComponent(tokenResp.accessToken));
+        var ottData = await ottRes.json();
+        if (ottData.success && ottData.ott) {
+          // 3. Redirigir al SIT con OTT (sin pantalla de login)
+          window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott) +
+            (data.equipo.id ? '&activo=' + encodeURIComponent(data.equipo.id) : '');
+        } else {
+          throw new Error(ottData.message || 'No se pudo generar el acceso');
+        }
+      } catch (err) {
+        console.error('[SIT] OTT error al abrir SIT:', err);
+        btn.disabled = false;
+        btn.textContent = 'Gestionar en SIT';
+        alert('No se pudo abrir el SIT. Intenta de nuevo.');
+      }
     };
 
     // 9. Show details state
