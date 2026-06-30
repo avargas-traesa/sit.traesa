@@ -214,9 +214,17 @@
       height: 100%;
       background: linear-gradient(90deg, var(--accent), var(--accent2));
       border-radius: 2px;
-      animation: fill-bar 1.5s ease-out forwards;
+      animation: fill-bar 18s cubic-bezier(0.1, 0.05, 0.3, 1) forwards;
     }
-    @keyframes fill-bar { from { width: 0%; } to { width: 100%; } }
+    @keyframes fill-bar {
+      0%   { width: 0%; }
+      10%  { width: 30%; }
+      30%  { width: 55%; }
+      60%  { width: 72%; }
+      80%  { width: 82%; }
+      95%  { width: 90%; }
+      100% { width: 92%; }
+    }
 
     /* Ficha Técnica Styles */
     .container.wide {
@@ -840,8 +848,12 @@
           var ottData = await ottRes.json();
 
           if (ottData.success && ottData.ott) {
-            // 3. Redirigir al sistema SIT con el OTT → entra directo sin segundo login
-            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
+            // 3. Redirigir al sistema SIT con el OTT — pequeño delay para que
+            //    la animación de carga sea visible antes de navegar
+            var destUrl = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
+            setTimeout(function() {
+              window.location.href = destUrl;
+            }, 2000);
           } else {
             showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
           }
