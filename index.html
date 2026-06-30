@@ -848,12 +848,8 @@
           var ottData = await ottRes.json();
 
           if (ottData.success && ottData.ott) {
-            // 3. Redirigir al sistema SIT con el OTT — pequeño delay para que
-            //    la animación de carga sea visible antes de navegar
-            var destUrl = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
-            setTimeout(function() {
-              window.location.href = destUrl;
-            }, 2000);
+            // 3. Redirigir inmediatamente al sistema SIT con el OTT
+            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
           } else {
             showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
           }
