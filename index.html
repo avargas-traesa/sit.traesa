@@ -569,6 +569,91 @@
   </style>
 </head>
 <body>
+
+<!-- ═══ Overlay de carga: aparece al abrir SIT ═══ -->
+<div id="sit-loading-overlay" style="
+  display: none;
+  position: fixed; inset: 0; z-index: 99999;
+  background: linear-gradient(135deg, #0a0a1a 0%, #0d1117 40%, #0a0f1e 100%);
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 28px; animation: overlayIn 0.3s ease;">
+  <style>
+    @keyframes overlayIn { from { opacity:0 } to { opacity:1 } }
+    @keyframes spinRing  { to { transform: rotate(360deg) } }
+    @keyframes pulseRing { 0%,100%{opacity:.15;transform:scale(1)} 50%{opacity:.4;transform:scale(1.08)} }
+    @keyframes dotBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+    @keyframes progressBar { 0%{left:-60%} 100%{left:110%} }
+    #sit-loading-overlay .ring-wrap { position:relative; width:100px; height:100px; }
+    #sit-loading-overlay .ring-pulse {
+      position:absolute; inset:0; border-radius:50%;
+      border:2px solid rgba(243,112,33,.2);
+      animation: pulseRing 2.4s ease-in-out infinite;
+    }
+    #sit-loading-overlay .ring-pulse:nth-child(2){ inset:-12px; animation-delay:.8s; }
+    #sit-loading-overlay .ring-pulse:nth-child(3){ inset:-24px; animation-delay:1.6s; }
+    #sit-loading-overlay .ring-spin {
+      position:absolute; inset:0; border-radius:50%;
+      border:3px solid transparent;
+      border-top-color:#f37021;
+      border-right-color:rgba(243,112,33,.4);
+      animation: spinRing 1s linear infinite;
+    }
+    #sit-loading-overlay .logo-circle {
+      position:absolute; inset:12px; border-radius:50%;
+      background:radial-gradient(circle, rgba(243,112,33,.18) 0%, rgba(10,10,26,.9) 70%);
+      display:flex; align-items:center; justify-content:center;
+      font-size:24px;
+    }
+    #sit-loading-overlay .sit-load-title {
+      font-family:'Inter',sans-serif; font-weight:700;
+      font-size:18px; color:#f8fafc; letter-spacing:0.5px;
+    }
+    #sit-loading-overlay .sit-load-sub {
+      font-family:'Inter',sans-serif; font-size:13px;
+      color:rgba(248,250,252,.45); display:flex; align-items:center; gap:4px;
+    }
+    #sit-loading-overlay .dot {
+      width:5px; height:5px; border-radius:50%; background:#f37021;
+      animation: dotBounce 1.4s ease-in-out infinite;
+    }
+    #sit-loading-overlay .dot:nth-child(2){ animation-delay:.2s }
+    #sit-loading-overlay .dot:nth-child(3){ animation-delay:.4s }
+    #sit-loading-overlay .prog-wrap {
+      width:200px; height:3px; border-radius:99px;
+      background:rgba(255,255,255,.07); position:relative; overflow:hidden;
+    }
+    #sit-loading-overlay .prog-bar {
+      position:absolute; top:0; height:100%; width:60%;
+      border-radius:99px;
+      background:linear-gradient(90deg, transparent, #f37021, transparent);
+      animation: progressBar 1.6s ease-in-out infinite;
+    }
+  </style>
+
+  <!-- Anillos animados + ícono -->
+  <div class="ring-wrap">
+    <div class="ring-pulse"></div>
+    <div class="ring-pulse"></div>
+    <div class="ring-pulse"></div>
+    <div class="ring-spin"></div>
+    <div class="logo-circle">🖥️</div>
+  </div>
+
+  <!-- Textos -->
+  <div>
+    <div class="sit-load-title">Sistema de Inventario Tecnológico</div>
+  </div>
+  <div class="sit-load-sub">
+    Abriendo SIT
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+  </div>
+
+  <!-- Barra de progreso -->
+  <div class="prog-wrap"><div class="prog-bar"></div></div>
+</div>
+
 <div class="container">
 
   <!-- Logo -->
@@ -1255,6 +1340,9 @@
       var btn = document.getElementById('btn-open-sidit');
       btn.disabled = true;
       btn.textContent = 'Abriendo SIT…';
+      // Mostrar overlay de carga inmediatamente
+      var overlay = document.getElementById('sit-loading-overlay');
+      if (overlay) overlay.style.display = 'flex';
       try {
         var ott = null;
         // Usar OTT pre-cargado si existe y no ha expirado (TTL 4 min)
@@ -1294,6 +1382,9 @@
           (data.equipo.id ? '&activo=' + encodeURIComponent(data.equipo.id) : '');
       } catch (err) {
         console.error('[SIT] OTT error al abrir SIT:', err);
+        // Ocultar overlay si hubo error (para que el usuario pueda reintentar)
+        var overlay = document.getElementById('sit-loading-overlay');
+        if (overlay) overlay.style.display = 'none';
         btn.disabled = false;
         btn.textContent = 'Gestionar en SIT';
         alert('No se pudo abrir el SIT. Intenta de nuevo.');
