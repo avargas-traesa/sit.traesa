@@ -9,6 +9,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
+  <!-- ═══ PWA — Instalar como app ═══ -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f37021" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- iOS Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SIT" />
+  <link rel="apple-touch-icon" href="icon-192.jpg" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1544,6 +1553,17 @@
   }
 
   loadMSAL(0);
+</script>
+
+<!-- ═══ PWA Service Worker ═══ -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) { console.log('[SIT PWA] SW registrado:', reg.scope); })
+        .catch(function(err) { console.warn('[SIT PWA] SW falló:', err); });
+    });
+  }
 </script>
 </body>
 </html>
