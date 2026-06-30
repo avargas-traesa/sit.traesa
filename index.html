@@ -767,6 +767,42 @@
   // ── MSAL instance (global para reutilización en el botón "Gestionar en SIT") ──
   var msalInstance = null;
 
+  // ── OTT pre-cargado en background ────────────────────────────────────────────
+  // Se solicita al GAS mientras el usuario lee la ficha técnica.
+  // Cuando hace click en "Gestionar en SIT" el token ya está listo → acceso instantáneo.
+  var _prefetchedOTT = null;       // token pre-cargado
+  var _prefetchedOTTTime = 0;      // timestamp del fetch
+  var OTT_TTL_MS = 4 * 60 * 1000; // 4 min (el GAS lo expira a los 5)
+  var _cachedAccessToken = null; // Access token pre-obtenido para el botón OTT
+
+  async function _prefetchOTT() {
+    try {
+      if (!msalInstance) return;
+      var token = _cachedAccessToken;
+      if (!token) {
+        var accounts = msalInstance.getAllAccounts();
+        if (!accounts.length) return;
+        var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts[0] });
+        token = tokenResp.accessToken;
+        _cachedAccessToken = token;
+      }
+      var ottRes = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'getOneTimeToken', access_token: token })
+      });
+      var ottData = await ottRes.json();
+      if (ottData.success && ottData.ott) {
+        _prefetchedOTT  = ottData.ott;
+        _prefetchedOTTTime = Date.now();
+        console.log('[SIT] OTT pre-cargado OK');
+      }
+    } catch (e) {
+      // Silencioso — el handler del botón lo reintentará si _prefetchedOTT es null
+      console.warn('[SIT] Prefetch OTT falló (se reintentará al hacer click):', e.message);
+    }
+  }
+
   // ── Main logic ───────────────────────────────────────────────────────────
   async function main() {
     try {
@@ -845,9 +881,12 @@
           });
           var accessToken = tokenResp.accessToken;
 
-          // 2. Pedirle al GAS un One-Time Token verificado
-          var ottUrl = GAS_URL + '?action=getOneTimeToken&access_token=' + encodeURIComponent(accessToken);
-          var ottRes  = await fetch(ottUrl);
+          // 2. Pedirle al GAS un One-Time Token verificado (POST para evitar truncado de token en URL)
+          var ottRes  = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
+          });
           var ottData = await ottRes.json();
 
           if (ottData.success && ottData.ott) {
@@ -865,6 +904,10 @@
       }
 
       // We have active asset code. Fetch details in background from Apps Script JSON API.
+      // Pre-obtener access_token en background para el botón "Gestionar en SIT"
+      msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account })
+        .then(function(tr) { _cachedAccessToken = tr.accessToken; })
+        .catch(function(e) { console.warn('[SIT] Token background fail:', e.message); });
       showState('loading');
       var loadingTitle = document.getElementById('state-loading').querySelector('.state-title');
       var loadingDesc = document.getElementById('state-loading').querySelector('.state-desc');
@@ -1207,28 +1250,48 @@
       });
     }
 
-    // 8. Abrir el SIT completo usando OTT — reutiliza la instancia MSAL global
-    //    Evita la pantalla de login del GAS redirigiendo con token de un solo uso.
+    // 8. Abrir el SIT completo usando OTT — usa OTT pre-cargado si disponible (acceso instantáneo)
     document.getElementById('btn-open-sidit').onclick = async function() {
       var btn = document.getElementById('btn-open-sidit');
       btn.disabled = true;
       btn.textContent = 'Abriendo SIT…';
       try {
-        // 1. Reutilizar la instancia MSAL ya inicializada (sin crear una segunda)
-        if (!msalInstance) throw new Error('Instancia MSAL no inicializada');
-        var accounts2 = msalInstance.getAllAccounts();
-        if (!accounts2.length) throw new Error('Sin sesión activa');
-        var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts2[0] });
-        // 2. Pedir OTT al GAS
-        var ottRes = await fetch(GAS_URL + '?action=getOneTimeToken&access_token=' + encodeURIComponent(tokenResp.accessToken));
-        var ottData = await ottRes.json();
-        if (ottData.success && ottData.ott) {
-          // 3. Redirigir al SIT con OTT (sin pantalla de login)
-          window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott) +
-            (data.equipo.id ? '&activo=' + encodeURIComponent(data.equipo.id) : '');
+        var ott = null;
+        // Usar OTT pre-cargado si existe y no ha expirado (TTL 4 min)
+        if (_prefetchedOTT && (Date.now() - _prefetchedOTTTime) < OTT_TTL_MS) {
+          ott = _prefetchedOTT;
+          _prefetchedOTT = null; // OTT de un solo uso: limpiar inmediatamente
+          console.log('[SIT] Usando OTT pre-cargado');
         } else {
-          throw new Error(ottData.message || 'No se pudo generar el acceso');
+          // Fallback: pedir OTT fresco
+          if (!msalInstance) throw new Error('Instancia MSAL no inicializada');
+          var accounts2 = msalInstance.getAllAccounts();
+          if (!accounts2.length) throw new Error('Sin sesión activa');
+          var freshToken = _cachedAccessToken;
+          if (!freshToken) {
+            try {
+              var tr = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts2[0] });
+              freshToken = tr.accessToken;
+              _cachedAccessToken = freshToken;
+            } catch (silentErr) {
+              // Fallback interactivo — funciona en iOS porque está dentro de un click del usuario
+              var tr2 = await msalInstance.acquireTokenPopup({ scopes: ['User.Read'], account: accounts2[0] });
+              freshToken = tr2.accessToken;
+              _cachedAccessToken = freshToken;
+            }
+          }
+          var ottRes = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'getOneTimeToken', access_token: freshToken })
+          });
+          var ottData = await ottRes.json();
+          if (!ottData.success || !ottData.ott) throw new Error(ottData.message || 'No se pudo generar el acceso');
+          ott = ottData.ott;
         }
+        // Redirigir al SIT con OTT (sin pantalla de login)
+        window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ott) +
+          (data.equipo.id ? '&activo=' + encodeURIComponent(data.equipo.id) : '');
       } catch (err) {
         console.error('[SIT] OTT error al abrir SIT:', err);
         btn.disabled = false;
@@ -1236,6 +1299,9 @@
         alert('No se pudo abrir el SIT. Intenta de nuevo.');
       }
     };
+
+    // 9. Iniciar pre-carga del OTT en background (mientras el usuario lee la ficha)
+    _prefetchOTT();
 
     // 9. Show details state
     showState('details');
