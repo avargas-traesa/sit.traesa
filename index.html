@@ -11,8 +11,13 @@
 
   <!-- ═══ PWA — Instalar como app ═══ -->
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#f37021" />
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Android Chrome PWA -->
+  <meta name="application-name" content="SIT" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
   <!-- iOS Safari -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -961,40 +966,36 @@
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
       if (!activo) {
-        // No asset code → login directo al sistema SIT via One-Time Token
-        showState('redirect');
-        var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
-        var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
-        if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
-        if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
-
-        try {
-          // 1. Obtener access_token de Microsoft silenciosamente (ya autenticado)
-          var tokenResp = await msalInstance.acquireTokenSilent({
-            scopes: ['User.Read'],
-            account: account
-          });
-          var accessToken = tokenResp.accessToken;
-
-          // 2. Pedirle al GAS un One-Time Token verificado (POST para evitar truncado de token en URL)
-          var ottRes  = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
-          });
-          var ottData = await ottRes.json();
-
-          if (ottData.success && ottData.ott) {
-            // 3. Redirigir inmediatamente al sistema SIT con el OTT
-            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
-          } else {
-            showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
+        // Ya autenticado y sin código de activo → mostrar botón de ingreso al sistema
+        // NO auto-redirigir: el usuario debe hacer clic para entrar (evita loops al cerrar la app)
+        var email = account.username || '';
+        document.getElementById('btn-login').textContent = 'Ingresar al sistema SIT';
+        document.getElementById('btn-login').addEventListener('click', async function() {
+          showState('redirect');
+          var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
+          var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
+          if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
+          if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
+          try {
+            var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account });
+            var accessToken = tokenResp.accessToken;
+            var ottRes = await fetch(GAS_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
+            });
+            var ottData = await ottRes.json();
+            if (ottData.success && ottData.ott) {
+              window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
+            } else {
+              showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
+            }
+          } catch (ottErr) {
+            console.error('[SIT] OTT error:', ottErr);
+            window.location.href = GAS_URL;
           }
-        } catch (ottErr) {
-          console.error('[SIT] OTT error:', ottErr);
-          // Fallback: redirigir directo (el usuario verá la pantalla de login de GAS)
-          window.location.href = GAS_URL;
-        }
+        });
+        showState('login');
         return;
       }
 
