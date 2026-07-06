@@ -966,36 +966,30 @@
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
       if (!activo) {
-        // Ya autenticado y sin código de activo → mostrar botón de ingreso al sistema
-        // NO auto-redirigir: el usuario debe hacer clic para entrar (evita loops al cerrar la app)
-        var email = account.username || '';
-        document.getElementById('btn-login').textContent = 'Ingresar al sistema SIT';
-        document.getElementById('btn-login').addEventListener('click', async function() {
-          showState('redirect');
-          var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
-          var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
-          if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
-          if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
-          try {
-            var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account });
-            var accessToken = tokenResp.accessToken;
-            var ottRes = await fetch(GAS_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
-            });
-            var ottData = await ottRes.json();
-            if (ottData.success && ottData.ott) {
-              window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
-            } else {
-              showError((ottData.message || 'No se pudo generar el acceso.') + ' Intenta de nuevo.');
-            }
-          } catch (ottErr) {
-            console.error('[SIT] OTT error:', ottErr);
+        // Ya autenticado y sin código de activo → redirigir automáticamente al sistema
+        showState('redirect');
+        var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
+        var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
+        if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
+        if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
+        try {
+          var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account });
+          var accessToken = tokenResp.accessToken;
+          var ottRes = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
+          });
+          var ottData = await ottRes.json();
+          if (ottData.success && ottData.ott) {
+            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
+          } else {
             window.location.href = GAS_URL;
           }
-        });
-        showState('login');
+        } catch (ottErr) {
+          console.error('[SIT] OTT error:', ottErr);
+          window.location.href = GAS_URL;
+        }
         return;
       }
 
