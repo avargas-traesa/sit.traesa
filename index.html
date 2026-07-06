@@ -811,6 +811,43 @@
       </div>
     </div>
 
+    <!-- ► FIRMA REMOTA (iOS Chrome fix): estados servidos desde sit.traesa.com via fetch() -->
+    <div class="state" id="state-firma-loading">
+      <div class="spinner"></div>
+      <div class="state-title">Cargando solicitud…</div>
+      <div class="state-desc">Verificando la solicitud de firma remota.</div>
+    </div>
+
+    <div class="state" id="state-firma-form" style="text-align:left;width:100%;align-items:stretch;">
+      <div>
+        <h2 class="details-title" style="font-size:1.25rem;">Firma de Asignación</h2>
+        <div class="details-subtitle" style="margin-bottom:16px;">Estimado/a <strong id="firma-col-nombre" style="color:#f37021;"></strong>, revisa los detalles y firma abajo.</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-label">Activo</div><div class="info-value" id="firma-activo-id">-</div></div>
+        <div class="info-card"><div class="info-label">Categoría</div><div class="info-value" id="firma-activo-cat">-</div></div>
+        <div class="info-card"><div class="info-label">Equipo</div><div class="info-value" id="firma-activo-marca" style="font-size:0.85rem;">-</div></div>
+        <div class="info-card"><div class="info-label">Observaciones</div><div class="info-value" id="firma-notas" style="font-size:0.8rem;word-break:break-word;">-</div></div>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div class="section-title">Tu firma digital</div>
+        <div style="font-size:0.77rem;color:var(--muted);margin-bottom:8px;">Dibuja tu firma con el dedo en el recuadro:</div>
+        <canvas id="firma-canvas" style="width:100%;height:160px;border:1px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.04);touch-action:none;display:block;cursor:crosshair;"></canvas>
+        <button id="btn-limpiar-firma" style="margin-top:6px;background:transparent;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.5);border-radius:6px;padding:5px 14px;font-size:0.72rem;cursor:pointer;font-family:inherit;">Limpiar</button>
+      </div>
+      <button id="btn-confirmar-firma" style="width:100%;background:linear-gradient(135deg,#f97316,#ea580c,#dc2626);border:none;padding:13px 28px;font-weight:700;color:#fff;border-radius:10px;font-size:0.95rem;box-shadow:0 4px 20px rgba(234,88,12,0.45);transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;font-family:inherit;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(234,88,12,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(234,88,12,0.45)'">
+        ✓ Confirmar Firma Digital
+      </button>
+    </div>
+
+    <div class="state" id="state-firma-success">
+      <div class="success-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="state-title">¡Firma enviada!</div>
+      <div class="state-desc">Tu firma digital ha sido registrada exitosamente. Recibirás un correo electrónico de confirmación.</div>
+    </div>
+
   </div>
 
   <div class="footer">© Traesa · Sistema de Inventario Tecnológico</div>
@@ -863,6 +900,10 @@
   // ── Get ?activo= from URL ────────────────────────────────────────────────
   var urlParams = new URLSearchParams(window.location.search);
   var activo = (urlParams.get('activo') || '').toUpperCase().trim();
+  // ── Modo Firma Remota (iOS Chrome fix) ──
+  // Si viene ?pending_id= en la URL, cargamos la firma remota directamente con fetch().
+  // Así evitamos navegar a script.google.com, que causa el error de Google Drive en iOS Chrome.
+  var pendingId = (urlParams.get('pending_id') || '').trim();
 
   // ── MSAL instance (global para reutilización en el botón "Gestionar en SIT") ──
   var msalInstance = null;
@@ -1025,6 +1066,96 @@
     } catch (err) {
       console.error('[SIT] Auth error:', err);
       showError(err.message || 'Error inesperado. Intenta de nuevo.');
+    }
+  }
+
+  // ► FIRMA REMOTA EXTERNA — Flujo via fetch() desde sit.traesa.com (iOS Chrome fix)
+  // No usa google.script.run ni navega a script.google.com. Llama al GAS via JSON API.
+  async function iniciarFirmaRemotaExternal(pid) {
+    // Ocultar el loading overlay si está visible
+    var overlay = document.getElementById('sit-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+    showState('firma-loading');
+    try {
+      var res = await fetch(GAS_URL + '?action=getFirmaRemota&pending_id=' + encodeURIComponent(pid));
+      if (!res.ok) throw new Error('Error de red (' + res.status + ')');
+      var data = await res.json();
+      if (!data.success) { showError(data.message || 'No se encontró la solicitud de firma.'); return; }
+      renderFirmaRemotaForm(data, pid);
+    } catch(err) {
+      showError('No se pudo cargar la solicitud: ' + (err.message || err));
+    }
+  }
+
+  function renderFirmaRemotaForm(data, pid) {
+    document.getElementById('firma-col-nombre').textContent = data.request.colNombre || '';
+    document.getElementById('firma-activo-id').textContent = data.activo.id || '-';
+    document.getElementById('firma-activo-cat').textContent = data.activo.categoria || '-';
+    document.getElementById('firma-activo-marca').textContent = ((data.activo.marca || '') + ' ' + (data.activo.modelo || '')).trim() || '-';
+    document.getElementById('firma-notas').textContent = data.request.notas || 'Sin observaciones';
+    initFirmaCanvas();
+    document.getElementById('btn-confirmar-firma').onclick = function() { submitFirmaRemota(pid); };
+    document.querySelector('.container').classList.add('wide');
+    document.body.style.overflow = 'auto';
+    showState('firma-form');
+  }
+
+  function initFirmaCanvas() {
+    var canvas = document.getElementById('firma-canvas');
+    if (!canvas) return;
+    canvas.width = canvas.offsetWidth || 320;
+    canvas.height = 160;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#f0f0f0';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    var drawing = false;
+    function getPos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var sx = canvas.width / rect.width;
+      var sy = canvas.height / rect.height;
+      if (e.touches) return { x: (e.touches[0].clientX - rect.left) * sx, y: (e.touches[0].clientY - rect.top) * sy };
+      return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+    }
+    canvas.onmousedown = function(e) { drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+    canvas.onmousemove = function(e) { if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    canvas.onmouseup = canvas.onmouseleave = function() { drawing = false; };
+    canvas.ontouchstart = function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+    canvas.ontouchmove = function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+    canvas.ontouchend = function() { drawing = false; };
+    document.getElementById('btn-limpiar-firma').onclick = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); };
+  }
+
+  async function submitFirmaRemota(pid) {
+    var canvas = document.getElementById('firma-canvas');
+    var ctx = canvas.getContext('2d');
+    // Verificar que haya firma (al menos algún píxel no transparente)
+    var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    var hasFirma = false;
+    for (var i = 3; i < imgData.length; i += 4) { if (imgData[i] > 0) { hasFirma = true; break; } }
+    if (!hasFirma) { alert('Por favor dibuja tu firma antes de confirmar.'); return; }
+    var btn = document.getElementById('btn-confirmar-firma');
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+    try {
+      var firmaBase64 = canvas.toDataURL('image/png');
+      var res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'completarFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: '' })
+      });
+      var data = await res.json();
+      if (data.success) {
+        showState('firma-success');
+      } else {
+        showError(data.message || 'Error al procesar la firma. Intenta de nuevo.');
+        btn.disabled = false; btn.textContent = '✓ Confirmar Firma Digital';
+      }
+    } catch(err) {
+      showError('Error al enviar la firma: ' + (err.message || err));
+      btn.disabled = false; btn.textContent = '✓ Confirmar Firma Digital';
     }
   }
 
@@ -1548,7 +1679,14 @@
     document.body.appendChild(s);
   }
 
-  loadMSAL(0);
+  if (pendingId) {
+    // Modo firma remota: no necesitamos MSAL. Cargamos la firma via fetch() directamente.
+    var overlay = document.getElementById('sit-loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+    iniciarFirmaRemotaExternal(pendingId);
+  } else {
+    loadMSAL(0);
+  }
 </script>
 
 <!-- ═══ PWA: Botón instalar + Service Worker ═══ -->
