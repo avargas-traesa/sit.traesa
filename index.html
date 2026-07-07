@@ -832,8 +832,19 @@
       <div style="margin-bottom:16px;">
         <div class="section-title">Tu firma digital</div>
         <div style="font-size:0.77rem;color:var(--muted);margin-bottom:8px;">Dibuja tu firma con el dedo en el recuadro:</div>
-        <canvas id="firma-canvas" style="width:100%;height:160px;border:1px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.04);touch-action:none;display:block;cursor:crosshair;"></canvas>
+        <canvas id="firma-canvas" style="width:100%;height:160px;border:2px solid rgba(255,255,255,0.3);border-radius:10px;background:#ffffff;touch-action:none;display:block;cursor:crosshair;color-scheme:light;"></canvas>
         <button id="btn-limpiar-firma" style="margin-top:6px;background:transparent;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.5);border-radius:6px;padding:5px 14px;font-size:0.72rem;cursor:pointer;font-family:inherit;">Limpiar</button>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div class="section-title">Selfie de verificación</div>
+        <div style="font-size:0.77rem;color:var(--muted);margin-bottom:8px;">Toma una foto para certificar la firma:</div>
+        <div id="selfie-preview-wrap" style="display:none;margin-bottom:8px;">
+          <img id="selfie-preview" style="width:120px;height:120px;object-fit:cover;border-radius:50%;border:2px solid #f37021;display:block;" alt="Selfie" />
+        </div>
+        <div id="selfie-camera-wrap">
+          <video id="selfie-video" style="width:100%;max-width:240px;border-radius:10px;background:#000;display:block;" autoplay playsinline muted></video>
+          <button id="btn-tomar-selfie" style="margin-top:8px;background:linear-gradient(135deg,#0ea5e9,#0284c7);border:none;padding:8px 18px;font-weight:600;color:#fff;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:inherit;">📸 Tomar selfie</button>
+        </div>
       </div>
       <button id="btn-confirmar-firma" style="width:100%;background:linear-gradient(135deg,#f97316,#ea580c,#dc2626);border:none;padding:13px 28px;font-weight:700;color:#fff;border-radius:10px;font-size:0.95rem;box-shadow:0 4px 20px rgba(234,88,12,0.45);transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;font-family:inherit;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(234,88,12,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(234,88,12,0.45)'">
         ✓ Confirmar Firma Digital
@@ -1075,6 +1086,9 @@
     // Ocultar el loading overlay si está visible
     var overlay = document.getElementById('sit-loading-overlay');
     if (overlay) overlay.style.display = 'none';
+    // Ocultar el logo-wrap para que no se superponga al formulario de firma
+    var logoWrap = document.querySelector('.logo-wrap');
+    if (logoWrap) logoWrap.style.display = 'none';
     showState('firma-loading');
     try {
       var res = await fetch(GAS_URL + '?action=getFirmaRemota&pending_id=' + encodeURIComponent(pid));
@@ -1094,6 +1108,7 @@
     document.getElementById('firma-activo-marca').textContent = ((data.activo.marca || '') + ' ' + (data.activo.modelo || '')).trim() || '-';
     document.getElementById('firma-notas').textContent = data.request.notas || 'Sin observaciones';
     initFirmaCanvas();
+    initSelfieCam();
     document.getElementById('btn-confirmar-firma').onclick = function() { submitFirmaRemota(pid); };
     document.querySelector('.container').classList.add('wide');
     document.body.style.overflow = 'auto';
@@ -1104,10 +1119,13 @@
     var canvas = document.getElementById('firma-canvas');
     if (!canvas) return;
     canvas.width = canvas.offsetWidth || 320;
+    canvas.style.colorScheme = 'light';
     canvas.height = 160;
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#f0f0f0';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#111111';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -1125,7 +1143,49 @@
     canvas.ontouchstart = function(e) { e.preventDefault(); drawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
     canvas.ontouchmove = function(e) { e.preventDefault(); if (!drawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
     canvas.ontouchend = function() { drawing = false; };
-    document.getElementById('btn-limpiar-firma').onclick = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); };
+    document.getElementById('btn-limpiar-firma').onclick = function() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); };
+  }
+
+  function initSelfieCam() {
+    var video = document.getElementById('selfie-video');
+    var btnTomar = document.getElementById('btn-tomar-selfie');
+    if (!video || !btnTomar) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      var camWrap = document.getElementById('selfie-camera-wrap');
+      if (camWrap) camWrap.style.display = 'none';
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then(function(stream) {
+        video.srcObject = stream;
+        window._selfieStream = stream;
+      })
+      .catch(function() {
+        var camWrap = document.getElementById('selfie-camera-wrap');
+        if (camWrap) camWrap.style.display = 'none';
+      });
+    btnTomar.addEventListener('click', function() {
+      var canvas2 = document.createElement('canvas');
+      canvas2.width = video.videoWidth || 320;
+      canvas2.height = video.videoHeight || 320;
+      canvas2.getContext('2d').drawImage(video, 0, 0);
+      window._selfieBase64 = canvas2.toDataURL('image/jpeg', 0.7);
+      var preview = document.getElementById('selfie-preview');
+      var previewWrap = document.getElementById('selfie-preview-wrap');
+      var camWrap = document.getElementById('selfie-camera-wrap');
+      if (preview) { preview.src = window._selfieBase64; }
+      if (previewWrap) previewWrap.style.display = 'block';
+      if (camWrap) camWrap.style.display = 'none';
+      if (window._selfieStream) { window._selfieStream.getTracks().forEach(function(t){ t.stop(); }); window._selfieStream = null; }
+      btnTomar.textContent = '🔄 Retomar';
+      btnTomar.onclick = function() {
+        if (previewWrap) previewWrap.style.display = 'none';
+        if (camWrap) camWrap.style.display = 'block';
+        window._selfieBase64 = null;
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+          .then(function(s) { video.srcObject = s; window._selfieStream = s; });
+      };
+    });
   }
 
   async function submitFirmaRemota(pid) {
@@ -1136,6 +1196,8 @@
     var hasFirma = false;
     for (var i = 3; i < imgData.length; i += 4) { if (imgData[i] > 0) { hasFirma = true; break; } }
     if (!hasFirma) { alert('Por favor dibuja tu firma antes de confirmar.'); return; }
+    // Detener stream de cámara si sigue activo
+    if (window._selfieStream) { window._selfieStream.getTracks().forEach(function(t){ t.stop(); }); window._selfieStream = null; }
     var btn = document.getElementById('btn-confirmar-firma');
     btn.disabled = true;
     btn.textContent = 'Enviando…';
@@ -1144,7 +1206,7 @@
       var res = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'completarFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: '' })
+        body: JSON.stringify({ action: 'completarFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: (window._selfieBase64 || '') })
       });
       var data = await res.json();
       if (data.success) {
@@ -1683,6 +1745,9 @@
     // Modo firma remota: no necesitamos MSAL. Cargamos la firma via fetch() directamente.
     var overlay = document.getElementById('sit-loading-overlay');
     if (overlay) overlay.style.display = 'none';
+    // Ocultar el logo-wrap para que no se superponga al formulario de firma
+    var logoWrap = document.querySelector('.logo-wrap');
+    if (logoWrap) logoWrap.style.display = 'none';
     iniciarFirmaRemotaExternal(pendingId);
   } else {
     loadMSAL(0);
