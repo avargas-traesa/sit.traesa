@@ -1211,6 +1211,13 @@
       var data = await res.json();
       if (data.success) {
         showState('firma-success');
+        // Disparar envío del comprobante en segundo plano (fire-and-forget) —
+        // no se espera la respuesta para no retrasar la confirmación visual.
+        fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'enviarCorreosFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: (window._selfieBase64 || '') })
+        }).catch(function(e) { console.warn('Error enviando comprobante (async):', e); });
       } else {
         showError(data.message || 'Error al procesar la firma. Intenta de nuevo.');
         btn.disabled = false; btn.textContent = '✓ Confirmar Firma Digital';
