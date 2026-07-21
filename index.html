@@ -74,6 +74,7 @@
 
     /* Logo */
     .logo-wrap {
+      margin-top: 24px;
       margin-bottom: 36px;
       display: flex;
       flex-direction: column;
@@ -829,6 +830,23 @@
         <div class="info-card"><div class="info-label">Equipo</div><div class="info-value" id="firma-activo-marca" style="font-size:0.85rem;">-</div></div>
         <div class="info-card"><div class="info-label">Observaciones</div><div class="info-value" id="firma-notas" style="font-size:0.8rem;word-break:break-word;">-</div></div>
       </div>
+      <div id="policy-section-mobile" style="margin-bottom:16px;">
+        <div class="section-title">Política de Uso y Custodia de Equipo</div>
+        <div style="font-size:0.77rem;color:var(--muted);margin-bottom:8px;">Lea atentamente antes de firmar:</div>
+        <div id="policy-box-recepcion-mobile" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px;font-size:0.74rem;color:rgba(248,250,252,0.75);line-height:1.55;max-height:180px;overflow-y:auto;">
+          Al firmar este documento, el colaborador acepta recibir el equipo tecnológico asignado y se compromete a usarlo exclusivamente para actividades laborales, cuidarlo y devolverlo en buen estado.
+        </div>
+      </div>
+      <!-- Checkbox de aceptación de política -->
+      <div id="policy-accept-section" style="margin-bottom:20px;padding:14px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;">
+        <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+          <input type="checkbox" id="mobile-policy-accept" onchange="onMobilePolicyAccept(this)" style="width:18px;height:18px;margin-top:2px;accent-color:#f97316;flex-shrink:0;cursor:pointer;" />
+          <span style="font-size:0.78rem;color:rgba(248,250,252,0.8);line-height:1.5;">
+            He leído detenidamente y <strong style="color:#f97316;">Acepto incondicionalmente</strong> la Política de Uso, Custodia y Confidencialidad de Equipo Tecnológico.
+            <span style="color:rgba(248,250,252,0.45);font-size:0.72rem;"> (campo obligatorio)</span>
+          </span>
+        </label>
+      </div>
       <div style="margin-bottom:16px;">
         <div class="section-title">Tu firma digital</div>
         <div style="font-size:0.77rem;color:var(--muted);margin-bottom:8px;">Dibuja tu firma con el dedo en el recuadro:</div>
@@ -849,6 +867,10 @@
       <button id="btn-confirmar-firma" style="width:100%;background:linear-gradient(135deg,#f97316,#ea580c,#dc2626);border:none;padding:13px 28px;font-weight:700;color:#fff;border-radius:10px;font-size:0.95rem;box-shadow:0 4px 20px rgba(234,88,12,0.45);transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;font-family:inherit;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(234,88,12,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(234,88,12,0.45)'">
         ✓ Confirmar Firma Digital
       </button>
+      <!-- Logo TI al final del formulario -->
+      <div id="ti-logo-bottom" style="display:flex;justify-content:center;margin-top:32px;padding-bottom:16px;opacity:0.6;">
+        <img id="ti-logo-bottom-img" src="" alt="Tecnología e Información" style="width:90px;height:auto;" />
+      </div>
     </div>
 
     <div class="state" id="state-firma-success">
@@ -1086,9 +1108,9 @@
     // Ocultar el loading overlay si está visible
     var overlay = document.getElementById('sit-loading-overlay');
     if (overlay) overlay.style.display = 'none';
-    // Ocultar el logo-wrap para que no se superponga al formulario de firma
+    // Ajustar logo-wrap para que se integre al formulario de firma
     var logoWrap = document.querySelector('.logo-wrap');
-    if (logoWrap) logoWrap.style.display = 'none';
+    if (logoWrap) logoWrap.style.marginBottom = '18px';
     showState('firma-loading');
     try {
       var res = await fetch(GAS_URL + '?action=getFirmaRemota&pending_id=' + encodeURIComponent(pid));
@@ -1102,16 +1124,42 @@
   }
 
   function renderFirmaRemotaForm(data, pid) {
+    // Ocultar logo TI de esquina (queda superpuesto en firma remota)
+    var tiLogoCorner = document.querySelector('.ti-logo-corner');
+    if (tiLogoCorner) tiLogoCorner.style.display = 'none';
+    // Mostrar logo TI en la parte inferior del formulario
+    var tiLogoBottom = document.getElementById('ti-logo-bottom-img');
+    if (tiLogoBottom) {
+      var tiLogoCornerImg = document.querySelector('.ti-logo-corner img');
+      if (tiLogoCornerImg) tiLogoBottom.src = tiLogoCornerImg.src;
+      var tiLogoBottomWrap = document.getElementById('ti-logo-bottom-wrap');
+      if (tiLogoBottomWrap) tiLogoBottomWrap.style.display = 'block';
+    }
+    
     document.getElementById('firma-col-nombre').textContent = data.request.colNombre || '';
     document.getElementById('firma-activo-id').textContent = data.activo.id || '-';
     document.getElementById('firma-activo-cat').textContent = data.activo.categoria || '-';
     document.getElementById('firma-activo-marca').textContent = ((data.activo.marca || '') + ' ' + (data.activo.modelo || '')).trim() || '-';
     document.getElementById('firma-notas').textContent = data.request.notas || 'Sin observaciones';
+    // Aplicar política dinámica si viene del backend
+    if (data.politicaRecepcion) {
+      var policyBox = document.getElementById('policy-box-recepcion-mobile');
+      if (policyBox) policyBox.innerText = data.politicaRecepcion;
+    }
     initFirmaCanvas();
     initSelfieCam();
     document.getElementById('btn-confirmar-firma').onclick = function() { submitFirmaRemota(pid); };
     document.querySelector('.container').classList.add('wide');
     document.body.style.overflow = 'auto';
+    // Resetear checkbox de política y deshabilitar botón hasta que se acepte
+    var chk = document.getElementById('mobile-policy-accept');
+    if (chk) chk.checked = false;
+    var btnFirma = document.getElementById('btn-confirmar-firma');
+    if (btnFirma) {
+      btnFirma.disabled = true;
+      btnFirma.style.opacity = '0.4';
+      btnFirma.style.cursor = 'not-allowed';
+    }
     showState('firma-form');
   }
 
@@ -1188,6 +1236,24 @@
     });
   }
 
+  /**
+   * Se llama cuando el usuario marca/desmarca el checkbox de política.
+   * Habilita o deshabilita el botón de confirmar firma.
+   */
+  function onMobilePolicyAccept(checkbox) {
+    var btn = document.getElementById('btn-confirmar-firma');
+    if (!btn) return;
+    if (checkbox.checked) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+    }
+  }
+
   async function submitFirmaRemota(pid) {
     var canvas = document.getElementById('firma-canvas');
     var ctx = canvas.getContext('2d');
@@ -1196,6 +1262,7 @@
     var hasFirma = false;
     for (var i = 3; i < imgData.length; i += 4) { if (imgData[i] > 0) { hasFirma = true; break; } }
     if (!hasFirma) { alert('Por favor dibuja tu firma antes de confirmar.'); return; }
+    if (!window._selfieBase64) { alert('Por favor toma una selfie de verificación antes de confirmar.'); return; }
     // Detener stream de cámara si sigue activo
     if (window._selfieStream) { window._selfieStream.getTracks().forEach(function(t){ t.stop(); }); window._selfieStream = null; }
     var btn = document.getElementById('btn-confirmar-firma');
@@ -1216,7 +1283,7 @@
         fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'enviarCorreosFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: (window._selfieBase64 || '') })
+          body: JSON.stringify({ action: 'enviarCorreosFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: '' })
         }).catch(function(e) { console.warn('Error enviando comprobante (async):', e); });
       } else {
         showError(data.message || 'Error al procesar la firma. Intenta de nuevo.');
@@ -1752,9 +1819,12 @@
     // Modo firma remota: no necesitamos MSAL. Cargamos la firma via fetch() directamente.
     var overlay = document.getElementById('sit-loading-overlay');
     if (overlay) overlay.style.display = 'none';
-    // Ocultar el logo-wrap para que no se superponga al formulario de firma
+    // Ajustar logo-wrap para que se integre al formulario de firma
     var logoWrap = document.querySelector('.logo-wrap');
-    if (logoWrap) logoWrap.style.display = 'none';
+    if (logoWrap) {
+      logoWrap.style.marginBottom = '18px';
+      logoWrap.style.paddingBottom = '0';
+    }
     iniciarFirmaRemotaExternal(pendingId);
   } else {
     loadMSAL(0);
