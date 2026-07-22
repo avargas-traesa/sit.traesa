@@ -1469,33 +1469,26 @@
         }
       });
 
+      // v532 FIX (igual que JavaScript.html del panel admin): antes se buscaba una
+      // entrada visible cuyo destino coincidiera para heredar el idDocumento — pero esa
+      // búsqueda podía secuestrar una entrada visible completamente distinta y ya cerrada
+      // (una Reasignación presencial antigua, u otro ciclo de firma remota a la misma
+      // persona), dejando esa tarjeta vieja con la fecha correcta pero el documento
+      // equivocado. Cada finalización de firma remota siempre se origina desde su propia
+      // Reserva/Transferencia Remota interna, nunca desde una entrada ya visible, así que
+      // promoverla siempre (sin buscar) es correcto y elimina el riesgo de cruce.
       _entriesInternas.forEach(function(interna) {
         var tipoI = (interna.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         var esFirmaCompleta = tipoI.includes('firma remota completada') || tipoI.includes('transferencia completada');
         if (!esFirmaCompleta) return;
-        var fusionado = false;
-        for (var j = _entriesVisibles.length - 1; j >= 0; j--) {
-          var cand = _entriesVisibles[j];
-          var tipoC = (cand.tipo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          if ((tipoC.includes('asignacion') || tipoC.includes('reasignacion') || tipoC.includes('transferencia')) &&
-              cand.destino === interna.destino) {
-            cand.esFirmaRemota = true;
-            cand.idDocumento = interna.idMovimiento;
-            cand.notaFirmaRemota = '✍️ Firma completada remotamente el ' + (interna.fecha || '');
-            fusionado = true;
-            break;
-          }
-        }
-        if (!fusionado) {
-          var tipoPromovido = tipoI.includes('transferencia') ? 'Transferencia' : 'Asignación';
-          _entriesVisibles.push(Object.assign({}, interna, {
-            tipo: tipoPromovido,
-            esFirmaRemota: true,
-            idDocumento: interna.idMovimiento,
-            notaFirmaRemota: null,
-            notaFactura: null
-          }));
-        }
+        var tipoPromovido = tipoI.includes('transferencia') ? 'Transferencia' : (tipoI.includes('reasignaci') ? 'Reasignación' : 'Asignación');
+        _entriesVisibles.push(Object.assign({}, interna, {
+          tipo: tipoPromovido,
+          esFirmaRemota: true,
+          idDocumento: interna.idMovimiento,
+          notaFirmaRemota: null,
+          notaFactura: null
+        }));
       });
 
       _entriesInternas.forEach(function(interna) {
