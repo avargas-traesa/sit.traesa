@@ -1283,7 +1283,7 @@
         fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'enviarCorreosFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: '' })
+          body: JSON.stringify({ action: 'enviarCorreosFirmaRemota', pending_id: pid, firma_base64: firmaBase64, selfie_base64: (window._selfieBase64 || '') })
         }).catch(function(e) { console.warn('Error enviando comprobante (async):', e); });
       } else {
         showError(data.message || 'Error al procesar la firma. Intenta de nuevo.');
