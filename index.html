@@ -1819,6 +1819,13 @@
       logoWrap.style.paddingBottom = '0';
     }
     iniciarFirmaRemotaExternal(pendingId);
+  } else if (!activo) {
+    // Sin código de activo ni firma remota: no hay ninguna Ficha Técnica que
+    // mostrar aquí, así que no hace falta autenticar con Office 365 para nada
+    // — el login del panel SIT ahora es interno (usuario y contraseña
+    // propios, ver Código.gs/iniciarSesionUsuarioTI). Enviar directo al panel,
+    // sin cargar MSAL ni mostrar la animación de "Acceso verificado".
+    window.location.href = GAS_URL;
   } else {
     loadMSAL(0);
   }
