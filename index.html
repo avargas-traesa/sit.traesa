@@ -723,19 +723,6 @@
       </button>
     </div>
 
-    <!-- State: redirecting -->
-    <div class="state" id="state-redirect">
-      <div class="success-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </div>
-      <div class="state-title">¡Autenticado!</div>
-      <div class="state-desc">Abriendo la ficha técnica…</div>
-      <div class="asset-badge" id="redirect-asset-id" style="display:none"></div>
-      <div class="progress-bar"><div class="progress-fill"></div></div>
-    </div>
-
     <!-- State: error -->
     <div class="state" id="state-error">
       <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -952,44 +939,8 @@
   // Así evitamos navegar a script.google.com, que causa el error de Google Drive en iOS Chrome.
   var pendingId = (urlParams.get('pending_id') || '').trim();
 
-  // ── MSAL instance (global para reutilización en el botón "Gestionar en SIT") ──
+  // ── MSAL instance (global, se usa solo para la autenticación de la Ficha Técnica) ──
   var msalInstance = null;
-
-  // ── OTT pre-cargado en background ────────────────────────────────────────────
-  // Se solicita al GAS mientras el usuario lee la ficha técnica.
-  // Cuando hace click en "Gestionar en SIT" el token ya está listo → acceso instantáneo.
-  var _prefetchedOTT = null;       // token pre-cargado
-  var _prefetchedOTTTime = 0;      // timestamp del fetch
-  var OTT_TTL_MS = 4 * 60 * 1000; // 4 min (el GAS lo expira a los 5)
-  var _cachedAccessToken = null; // Access token pre-obtenido para el botón OTT
-
-  async function _prefetchOTT() {
-    try {
-      if (!msalInstance) return;
-      var token = _cachedAccessToken;
-      if (!token) {
-        var accounts = msalInstance.getAllAccounts();
-        if (!accounts.length) return;
-        var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts[0] });
-        token = tokenResp.accessToken;
-        _cachedAccessToken = token;
-      }
-      var ottRes = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'getOneTimeToken', access_token: token })
-      });
-      var ottData = await ottRes.json();
-      if (ottData.success && ottData.ott) {
-        _prefetchedOTT  = ottData.ott;
-        _prefetchedOTTTime = Date.now();
-        console.log('[SIT] OTT pre-cargado OK');
-      }
-    } catch (e) {
-      // Silencioso — el handler del botón lo reintentará si _prefetchedOTT es null
-      console.warn('[SIT] Prefetch OTT falló (se reintentará al hacer click):', e.message);
-    }
-  }
 
   // ── Main logic ───────────────────────────────────────────────────────────
   async function main() {
@@ -1050,42 +1001,13 @@
         return;
       }
 
-      // ── Authenticated: Fetch details or redirect ─────────────────────────
+      // ── Authenticated: Fetch details ──────────────────────────────────────
+      // Nota: llegar aquí sin `activo` ya no es posible — el script en <head>
+      // redirige al panel SIT antes de cargar MSAL cuando no hay ?activo=
+      // ni ?pending_id= en la URL (ver comentario junto a <head>).
       var email = account.username || account.idTokenClaims && account.idTokenClaims.email || '';
 
-      if (!activo) {
-        // Ya autenticado y sin código de activo → redirigir automáticamente al sistema
-        showState('redirect');
-        var redirectTitle = document.getElementById('state-redirect').querySelector('.state-title');
-        var redirectDesc  = document.getElementById('state-redirect').querySelector('.state-desc');
-        if (redirectTitle) redirectTitle.textContent = 'Acceso verificado';
-        if (redirectDesc)  redirectDesc.textContent  = 'Abriendo el sistema SIT…';
-        try {
-          var tokenResp = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account });
-          var accessToken = tokenResp.accessToken;
-          var ottRes = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'getOneTimeToken', access_token: accessToken })
-          });
-          var ottData = await ottRes.json();
-          if (ottData.success && ottData.ott) {
-            window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ottData.ott);
-          } else {
-            window.location.href = GAS_URL;
-          }
-        } catch (ottErr) {
-          console.error('[SIT] OTT error:', ottErr);
-          window.location.href = GAS_URL;
-        }
-        return;
-      }
-
       // We have active asset code. Fetch details in background from Apps Script JSON API.
-      // Pre-obtener access_token en background para el botón "Gestionar en SIT"
-      msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: account })
-        .then(function(tr) { _cachedAccessToken = tr.accessToken; })
-        .catch(function(e) { console.warn('[SIT] Token background fail:', e.message); });
       showState('loading');
       var loadingTitle = document.getElementById('state-loading').querySelector('.state-title');
       var loadingDesc = document.getElementById('state-loading').querySelector('.state-desc');
@@ -1614,64 +1536,17 @@
       });
     }
 
-    // 8. Abrir el SIT completo usando OTT — usa OTT pre-cargado si disponible (acceso instantáneo)
-    document.getElementById('btn-open-sidit').onclick = async function() {
+    // 8. Abrir el SIT completo — el panel ahora tiene su propio login interno
+    // (usuario/contraseña, ver Código.gs/iniciarSesionUsuarioTI), así que no
+    // hace falta generar ningún token de acceso de un solo uso aquí.
+    document.getElementById('btn-open-sidit').onclick = function() {
       var btn = document.getElementById('btn-open-sidit');
       btn.disabled = true;
       btn.textContent = 'Abriendo SIT…';
-      // Mostrar overlay de carga inmediatamente
       var overlay = document.getElementById('sit-loading-overlay');
       if (overlay) overlay.style.display = 'flex';
-      try {
-        var ott = null;
-        // Usar OTT pre-cargado si existe y no ha expirado (TTL 4 min)
-        if (_prefetchedOTT && (Date.now() - _prefetchedOTTTime) < OTT_TTL_MS) {
-          ott = _prefetchedOTT;
-          _prefetchedOTT = null; // OTT de un solo uso: limpiar inmediatamente
-          console.log('[SIT] Usando OTT pre-cargado');
-        } else {
-          // Fallback: pedir OTT fresco
-          if (!msalInstance) throw new Error('Instancia MSAL no inicializada');
-          var accounts2 = msalInstance.getAllAccounts();
-          if (!accounts2.length) throw new Error('Sin sesión activa');
-          var freshToken = _cachedAccessToken;
-          if (!freshToken) {
-            try {
-              var tr = await msalInstance.acquireTokenSilent({ scopes: ['User.Read'], account: accounts2[0] });
-              freshToken = tr.accessToken;
-              _cachedAccessToken = freshToken;
-            } catch (silentErr) {
-              // Fallback interactivo — funciona en iOS porque está dentro de un click del usuario
-              var tr2 = await msalInstance.acquireTokenPopup({ scopes: ['User.Read'], account: accounts2[0] });
-              freshToken = tr2.accessToken;
-              _cachedAccessToken = freshToken;
-            }
-          }
-          var ottRes = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ action: 'getOneTimeToken', access_token: freshToken })
-          });
-          var ottData = await ottRes.json();
-          if (!ottData.success || !ottData.ott) throw new Error(ottData.message || 'No se pudo generar el acceso');
-          ott = ottData.ott;
-        }
-        // Redirigir al SIT con OTT (sin pantalla de login)
-        window.location.href = GAS_URL + '?ott=' + encodeURIComponent(ott) +
-          (data.equipo.id ? '&activo=' + encodeURIComponent(data.equipo.id) : '');
-      } catch (err) {
-        console.error('[SIT] OTT error al abrir SIT:', err);
-        // Ocultar overlay si hubo error (para que el usuario pueda reintentar)
-        var overlay = document.getElementById('sit-loading-overlay');
-        if (overlay) overlay.style.display = 'none';
-        btn.disabled = false;
-        btn.textContent = 'Gestionar en SIT';
-        alert('No se pudo abrir el SIT. Intenta de nuevo.');
-      }
+      window.location.href = GAS_URL + (data.equipo.id ? '?activo=' + encodeURIComponent(data.equipo.id) : '');
     };
-
-    // 9. Iniciar pre-carga del OTT en background (mientras el usuario lee la ficha)
-    _prefetchOTT();
 
     // 9. Show details state
     showState('details');
