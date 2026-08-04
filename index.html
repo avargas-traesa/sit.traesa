@@ -8,10 +8,24 @@
     // "Verificando tu sesión de Microsoft 365" ni cargar MSAL. Colocado acá,
     // antes de cualquier CSS/HTML del body, para que corra antes del primer
     // pintado de la página y evite el destello de la pantalla vieja.
+    //
+    // Caso aparte ?page=solicitudInstalacion&proyecto=XXX (formulario público
+    // de solicitud de instalación de sitio, escaneado por QR desde el celular
+    // de alguien fuera de TI): esta página SIT (dominio propio) nunca debe
+    // quedar cargada esperando esos parámetros — solo existe para evitar que
+    // el link de script.google.com se lo "robe" la app de Google Drive en
+    // Android al escanear el QR (falla con "No se pudo abrir el archivo").
+    // Se reenvía de inmediato al exec real con los mismos parámetros, igual
+    // que para activo/pending_id pero sin necesidad de pintar nada acá.
     (function () {
       var params = new URLSearchParams(window.location.search);
+      var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+      if (params.get('page') === 'solicitudInstalacion' && params.get('proyecto')) {
+        window.location.replace(EXEC_URL + '?page=solicitudInstalacion&proyecto=' + encodeURIComponent(params.get('proyecto')));
+        return;
+      }
       if (!params.get('activo') && !params.get('pending_id')) {
-        window.location.replace('https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec');
+        window.location.replace(EXEC_URL);
       }
     })();
   </script>
