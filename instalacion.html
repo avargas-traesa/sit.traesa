@@ -50,6 +50,7 @@
   .gps-nota{font-size:12.5px;color:#D8D3C6;line-height:1.55;margin-bottom:10px;}
   .gps-btn{width:100%;padding:12px;background:transparent;border:1.5px solid #F37021;color:#F37021;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;margin-top:0;}
   .gps-status{font-size:12.5px;color:#D8D3C6;margin-top:10px;text-align:center;line-height:1.5;}
+  .gps-status:empty{display:none;}
   .gps-status.ok{color:#00e676;}
   .gps-status.warn{color:#ff9100;}
   .cargando{text-align:center;color:#D8D3C6;font-size:14px;padding:24px 0;}
@@ -90,9 +91,12 @@
         <div class="grp"><label>Señas físicas del sitio / ubicación del contenedor principal <span class="req">*</span></label><textarea id="f-senas" required placeholder="Ej: 200m al norte de la escuela, portón verde, contenedor blanco a la entrada..."></textarea></div>
         <div class="grp">
           <label>Ubicación del sitio</label>
-          <div class="gps-nota">Se te pide permiso de ubicación para tomar las coordenadas exactas del sitio donde estás parado y generar los links de Google Maps y Waze. Así el técnico llega directo el día de la instalación. Solo se usa en este momento y únicamente para eso.</div>
-          <button type="button" class="gps-btn" id="btn-gps">📍 Actualizar ubicación de Maps y Waze</button>
-          <div class="gps-status" id="gps-status">Toca el botón estando físicamente en el sitio.</div>
+          <div class="gps-nota">
+            <strong>Estando parado en el sitio</strong>, toca el botón de abajo para tomar las coordenadas exactas del lugar. Con eso se llenan solos los dos campos siguientes (Google Maps y Waze) y el técnico llega directo el día de la instalación.<br><br>
+            Al tocarlo, el teléfono te va a preguntar si permites el acceso a tu ubicación: hay que aceptar. <strong>Solo se lee en ese momento</strong>, únicamente para generar esos dos links; no se guarda ningún otro dato tuyo ni se te sigue después. Si prefieres no darlo, puedes pegar los links a mano en los campos de abajo.
+          </div>
+          <button type="button" class="gps-btn" id="btn-gps">📍 Tomar la ubicación del sitio</button>
+          <div class="gps-status" id="gps-status"></div>
         </div>
         <div class="grp"><label>Ubicación en Google Maps</label><input type="url" id="f-maps" placeholder="Se completa automático, o pega el link aquí"></div>
         <div class="grp"><label>Ubicación en Waze</label><input type="url" id="f-waze" placeholder="Se completa automático, o pega el link aquí"></div>
@@ -197,8 +201,11 @@
   }
 
   function iniciarGps() {
+    // El permiso de ubicación se pide SOLO al tocar el botón, nunca al abrir el
+    // formulario: si el navegador lo pregunta de entrada, la persona todavía no
+    // sabe para qué es y lo rechaza (y con el permiso ya denegado el botón
+    // deja de servir hasta que lo reactive a mano en la configuración).
     document.getElementById('btn-gps').addEventListener('click', capturarUbicacionGps);
-    if (navigator.geolocation) capturarUbicacionGps();
   }
 
   // ── 2b. Autocompletado del nombre ───────────────────────────────────────────
