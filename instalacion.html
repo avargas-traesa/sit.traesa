@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitud de Instalación — SIT TRAESA</title>
+<link rel="icon" href="icon-192.png">
+<!--
+  Formulario público de "Solicitud de Instalación de Sitio" de un proyecto de
+  construcción, servido desde sit.traesa.com (dominio propio, GitHub Pages).
+
+  ¿Por qué acá y no en el Apps Script? Porque el link/QR se escanea desde el
+  celular de gente fuera de TI, y al abrir un link de script.google.com en
+  Android, Google responde con la página de Google Drive "No se pudo abrir el
+  archivo en este momento. Verifica la dirección e inténtalo de nuevo." (pasa
+  con varias cuentas de Google en el teléfono y/o con la app de Drive
+  interceptando el dominio). Reenviar desde sit.traesa.com al /exec NO lo
+  arregla: el celular igual termina navegando a script.google.com.
+
+  Solución (mismo patrón ya usado para la Firma Remota en iOS Chrome): la
+  página completa vive acá y el backend se consume SOLO por fetch() JSON:
+    - GET  ?action=getProyectoInstalacion&proyecto=ID   → nombre del proyecto
+    - POST {action:'crearSolicitudInstalacion', proyecto, datos}
+  Ambos son públicos/anónimos, así que ninguna cuenta de Google interviene.
+  El equivalente en el backend está en Código.gs (doGet / doPost) y la ruta
+  HTML vieja (?page=solicitudInstalacion) se mantiene solo como respaldo.
+-->
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,Helvetica,sans-serif;background:#0e1013;color:#f8fafc;min-height:100vh;padding:24px 16px 60px 16px;}
+  .wrap{max-width:560px;margin:0 auto;}
+  .card{background:rgba(51,63,72,0.45);border:1px solid rgba(216,211,198,0.15);border-radius:16px;padding:28px 24px;}
+  .logo{height:42px;width:auto;display:block;margin:0 auto 14px auto;}
+  h1{font-size:19px;color:#F37021;text-align:center;margin-bottom:4px;}
+  .subt{text-align:center;color:#D8D3C6;font-size:13.5px;margin-bottom:18px;}
+  .aviso{background:rgba(137,210,218,0.12);border:1px solid rgba(137,210,218,0.3);color:#89D2DA;font-size:12.5px;border-radius:10px;padding:12px 14px;margin-bottom:22px;line-height:1.5;}
+  .grp{margin-bottom:16px;}
+  label{display:block;font-size:12px;font-weight:600;color:#D8D3C6;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;}
+  .req{color:#F37021;}
+  input[type=text],input[type=email],input[type=number],input[type=url],select,textarea{width:100%;padding:11px 12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;font-size:14px;font-family:inherit;}
+  textarea{min-height:78px;resize:vertical;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  button{width:100%;padding:14px;background:#F37021;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:6px;}
+  button:disabled{opacity:0.6;cursor:not-allowed;}
+  .err{color:#ff6b6b;font-size:13px;margin-top:10px;text-align:center;display:none;}
+  .hidden{display:none;}
+  .gracias{text-align:center;padding:20px 4px;}
+  .gracias h2{color:#00e676;font-size:19px;margin-bottom:10px;}
+  .gracias p{color:#D8D3C6;font-size:14px;line-height:1.6;}
+  .gps-box{background:rgba(243,112,33,0.08);border:1px solid rgba(243,112,33,0.3);border-radius:10px;padding:14px;margin-bottom:16px;}
+  .gps-btn{width:100%;padding:12px;background:transparent;border:1.5px solid #F37021;color:#F37021;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;margin-top:0;}
+  .gps-status{font-size:12.5px;color:#D8D3C6;margin-top:10px;text-align:center;line-height:1.5;}
+  .gps-status.ok{color:#00e676;}
+  .gps-status.warn{color:#ff9100;}
+  .gps-open-row{display:none;gap:10px;margin-top:10px;}
+  .gps-open-row.show{display:grid;grid-template-columns:1fr 1fr;}
+  .gps-open-link{display:block;text-align:center;padding:9px;border-radius:8px;font-size:12.5px;font-weight:700;text-decoration:none;}
+  .gps-open-link.maps{background:rgba(66,133,244,0.15);color:#8ab4f8;border:1px solid rgba(66,133,244,0.35);}
+  .gps-open-link.waze{background:rgba(51,199,255,0.15);color:#33c7ff;border:1px solid rgba(51,199,255,0.35);}
+  .cargando{text-align:center;color:#D8D3C6;font-size:14px;padding:24px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <img src="logo-ti.png" alt="TRAESA" class="logo">
+
+    <!-- Estado 1: cargando el nombre del proyecto -->
+    <div id="estado-cargando" class="cargando">Cargando información del proyecto...</div>
+
+    <!-- Estado 2: proyecto inválido -->
+    <div id="estado-error" class="gracias hidden">
+      <h2 style="color:#ff6b6b;">Proyecto no encontrado</h2>
+      <p id="error-detalle">El link de solicitud no corresponde a ningún proyecto activo. Verifica el enlace con el Departamento de TI de TRAESA.</p>
+    </div>
+
+    <!-- Estado 3: formulario -->
+    <div id="estado-form" class="hidden">
+      <h1>Solicitud de Instalación de Sitio</h1>
+      <div class="subt">Proyecto: <strong id="nombre-proyecto"></strong></div>
+      <div class="aviso">Esta información permite al Departamento de TI coordinar la instalación de internet, cámaras y wifi del proyecto. Una vez recibida, el proceso completo de instalación puede tardar de <strong>15 días a 1 mes</strong>.</div>
+      <form id="form-solicitud">
+        <div class="grp"><label>Nombre de quien completa <span class="req">*</span></label><input type="text" id="f-nombre" required></div>
+        <div class="row2">
+          <div class="grp"><label>Rol <span class="req">*</span></label>
+            <select id="f-rol" required>
+              <option value="">Seleccionar...</option>
+              <option value="Encargado de Costos">Encargado de Costos</option>
+              <option value="Ingeniero">Ingeniero</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="grp"><label>Correo de contacto</label><input type="email" id="f-correo" placeholder="nombre@traesa.com"></div>
+        </div>
+        <div class="grp"><label>Señas físicas del sitio / ubicación del contenedor principal <span class="req">*</span></label><textarea id="f-senas" required placeholder="Ej: 200m al norte de la escuela, portón verde, contenedor blanco a la entrada..."></textarea></div>
+        <div class="gps-box">
+          <button type="button" class="gps-btn" id="btn-gps">📍 Usar mi ubicación actual (parado en el sitio)</button>
+          <div class="gps-status" id="gps-status">Toca el botón estando físicamente en el sitio para capturar la ubicación automáticamente.</div>
+          <div class="gps-open-row" id="gps-open-row">
+            <a href="#" target="_blank" rel="noopener" class="gps-open-link maps" id="gps-open-maps">Ver en Google Maps</a>
+            <a href="#" target="_blank" rel="noopener" class="gps-open-link waze" id="gps-open-waze">Ver en Waze</a>
+          </div>
+        </div>
+        <div class="grp"><label>Ubicación en Google Maps</label><input type="url" id="f-maps" placeholder="Se completa automático, o pega el link aquí"></div>
+        <div class="grp"><label>Ubicación en Waze</label><input type="url" id="f-waze" placeholder="Se completa automático, o pega el link aquí"></div>
+        <div class="grp"><label>Distancia a la calle principal <span class="req">*</span></label><input type="text" id="f-distancia" required placeholder="Ej: 500 metros"></div>
+        <div class="row2">
+          <div class="grp"><label>Duración proyectada</label><input type="number" min="0" id="f-duracion-valor" placeholder="Ej: 8"></div>
+          <div class="grp"><label>Unidad</label><select id="f-duracion-unidad"><option value="Meses">Meses</option><option value="Años">Años</option></select></div>
+        </div>
+        <div class="row2">
+          <div class="grp"><label>Cantidad de contenedores</label><input type="number" min="0" id="f-contenedores"></div>
+          <div class="grp"><label>Cantidad de bodegas</label><input type="number" min="0" id="f-bodegas"></div>
+        </div>
+        <div class="grp"><label>Cantidad aproximada de personas en el sitio</label><input type="number" min="0" id="f-personas"></div>
+        <button type="submit" id="btn-enviar">Enviar Solicitud</button>
+        <div class="err" id="err-msg"></div>
+      </form>
+    </div>
+
+    <!-- Estado 4: enviado -->
+    <div class="gracias hidden" id="pantalla-gracias">
+      <h2>¡Solicitud enviada!</h2>
+      <p>Gracias, el Departamento de TI de TRAESA recibió la información del sitio y coordinará la instalación de internet, cámaras y wifi. El proceso completo puede tardar de <strong>15 días a 1 mes</strong>. Si tienen dudas, pueden contactar a TI directamente.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+
+  var params = new URLSearchParams(window.location.search);
+  // Se acepta ?proyecto= (formato nuevo) y ?page=solicitudInstalacion&proyecto=
+  // (formato viejo, por si algún QR ya impreso apunta acá con esos parámetros).
+  var ID_PROYECTO = params.get('proyecto') || '';
+
+  var elCargando = document.getElementById('estado-cargando');
+  var elError    = document.getElementById('estado-error');
+  var elForm     = document.getElementById('estado-form');
+  var elGracias  = document.getElementById('pantalla-gracias');
+
+  function mostrarError(msg) {
+    elCargando.classList.add('hidden');
+    elForm.classList.add('hidden');
+    if (msg) document.getElementById('error-detalle').textContent = msg;
+    elError.classList.remove('hidden');
+  }
+
+  // ── 1. Cargar el nombre del proyecto ────────────────────────────────────────
+  function cargarProyecto() {
+    if (!ID_PROYECTO) {
+      mostrarError('El link no incluye el identificador del proyecto. Verifica el enlace con el Departamento de TI de TRAESA.');
+      return;
+    }
+    fetch(GAS_URL + '?action=getProyectoInstalacion&proyecto=' + encodeURIComponent(ID_PROYECTO))
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (!data || !data.success) {
+          mostrarError((data && data.message) ? data.message : null);
+          return;
+        }
+        document.getElementById('nombre-proyecto').textContent = data.nombre || '';
+        document.title = 'Solicitud de Instalación — ' + (data.nombre || 'SIT TRAESA');
+        elCargando.classList.add('hidden');
+        elForm.classList.remove('hidden');
+        iniciarGps();
+      })
+      .catch(function (err) {
+        mostrarError('No se pudo contactar al servidor (' + err.message + '). Revisa tu conexión e intenta de nuevo.');
+      });
+  }
+
+  // ── 2. Ubicación GPS ────────────────────────────────────────────────────────
+  function capturarUbicacionGps() {
+    var statusEl = document.getElementById('gps-status');
+    var btnGps = document.getElementById('btn-gps');
+    if (!navigator.geolocation) {
+      statusEl.textContent = 'Este navegador no soporta ubicación automática. Escribe los links manualmente.';
+      statusEl.className = 'gps-status warn';
+      return;
+    }
+    btnGps.disabled = true;
+    statusEl.textContent = 'Obteniendo tu ubicación...';
+    statusEl.className = 'gps-status';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      btnGps.disabled = false;
+      var lat = pos.coords.latitude, lng = pos.coords.longitude, acc = Math.round(pos.coords.accuracy || 0);
+      var mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
+      var wazeUrl = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
+      document.getElementById('f-maps').value = mapsUrl;
+      document.getElementById('f-waze').value = wazeUrl;
+      document.getElementById('gps-open-maps').href = mapsUrl;
+      document.getElementById('gps-open-waze').href = wazeUrl;
+      document.getElementById('gps-open-row').className = 'gps-open-row show';
+      statusEl.textContent = '📍 Ubicación capturada (precisión ~' + acc + 'm). Puedes verificarla abajo o ajustar los links manualmente si no es exacta.';
+      statusEl.className = 'gps-status ok';
+    }, function (err) {
+      btnGps.disabled = false;
+      statusEl.textContent = 'No se pudo obtener tu ubicación automáticamente (' + err.message + '). Puedes escribir los links manualmente.';
+      statusEl.className = 'gps-status warn';
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+  }
+
+  function iniciarGps() {
+    document.getElementById('btn-gps').addEventListener('click', capturarUbicacionGps);
+    if (navigator.geolocation) capturarUbicacionGps();
+  }
+
+  // ── 3. Envío ────────────────────────────────────────────────────────────────
+  document.getElementById('form-solicitud').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var errEl = document.getElementById('err-msg');
+    errEl.style.display = 'none';
+    var btn = document.getElementById('btn-enviar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    var datos = {
+      nombreSolicitante: document.getElementById('f-nombre').value,
+      rolSolicitante: document.getElementById('f-rol').value,
+      correoSolicitante: document.getElementById('f-correo').value,
+      senasFisicas: document.getElementById('f-senas').value,
+      linkGoogleMaps: document.getElementById('f-maps').value,
+      linkWaze: document.getElementById('f-waze').value,
+      distanciaCalle: document.getElementById('f-distancia').value,
+      duracionValor: document.getElementById('f-duracion-valor').value,
+      duracionUnidad: document.getElementById('f-duracion-unidad').value,
+      cantidadContenedores: document.getElementById('f-contenedores').value,
+      cantidadBodegas: document.getElementById('f-bodegas').value,
+      cantidadPersonas: document.getElementById('f-personas').value
+    };
+
+    function fallar(msg) {
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Enviar Solicitud';
+    }
+
+    // Content-Type text/plain = simple request, sin preflight CORS (mismo
+    // patrón que completarFirmaRemota en index.html).
+    fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'crearSolicitudInstalacion', proyecto: ID_PROYECTO, datos: datos })
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (resp) {
+        if (resp && resp.success) {
+          elForm.classList.add('hidden');
+          elGracias.classList.remove('hidden');
+        } else {
+          fallar((resp && resp.message) ? resp.message : 'No se pudo enviar la solicitud. Intenta de nuevo.');
+        }
+      })
+      .catch(function (err) {
+        fallar('Error de conexión: ' + err.message);
+      });
+  });
+
+  cargarProyecto();
+})();
+</script>
+</body>
+</html>

@@ -15,13 +15,19 @@
     // quedar cargada esperando esos parámetros — solo existe para evitar que
     // el link de script.google.com se lo "robe" la app de Google Drive en
     // Android al escanear el QR (falla con "No se pudo abrir el archivo").
-    // Se reenvía de inmediato al exec real con los mismos parámetros, igual
-    // que para activo/pending_id pero sin necesidad de pintar nada acá.
+    // Se reenvía de inmediato a instalacion.html (formulario estático servido
+    // desde este mismo dominio), sin necesidad de pintar nada acá.
     (function () {
       var params = new URLSearchParams(window.location.search);
       var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
       if (params.get('page') === 'solicitudInstalacion' && params.get('proyecto')) {
-        window.location.replace(EXEC_URL + '?page=solicitudInstalacion&proyecto=' + encodeURIComponent(params.get('proyecto')));
+        // Compatibilidad con QRs/links ya repartidos con el formato viejo.
+        // Ya NO se reenvía al /exec: en Android el celular terminaba en
+        // script.google.com y Google respondía con la página de Google Drive
+        // "No se pudo abrir el archivo en este momento". Ahora el formulario
+        // completo se sirve desde este mismo dominio (instalacion.html) y solo
+        // habla con el backend por fetch() JSON.
+        window.location.replace('instalacion.html?proyecto=' + encodeURIComponent(params.get('proyecto')));
         return;
       }
       if (!params.get('activo') && !params.get('pending_id')) {
