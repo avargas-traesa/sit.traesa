@@ -47,17 +47,19 @@
   .gracias{text-align:center;padding:20px 4px;}
   .gracias h2{color:#00e676;font-size:19px;margin-bottom:10px;}
   .gracias p{color:#D8D3C6;font-size:14px;line-height:1.6;}
-  .gps-box{background:rgba(243,112,33,0.08);border:1px solid rgba(243,112,33,0.3);border-radius:10px;padding:14px;margin-bottom:16px;}
+  .gps-nota{font-size:12.5px;color:#D8D3C6;line-height:1.55;margin-bottom:10px;}
   .gps-btn{width:100%;padding:12px;background:transparent;border:1.5px solid #F37021;color:#F37021;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer;margin-top:0;}
   .gps-status{font-size:12.5px;color:#D8D3C6;margin-top:10px;text-align:center;line-height:1.5;}
   .gps-status.ok{color:#00e676;}
   .gps-status.warn{color:#ff9100;}
-  .gps-open-row{display:none;gap:10px;margin-top:10px;}
-  .gps-open-row.show{display:grid;grid-template-columns:1fr 1fr;}
-  .gps-open-link{display:block;text-align:center;padding:9px;border-radius:8px;font-size:12.5px;font-weight:700;text-decoration:none;}
-  .gps-open-link.maps{background:rgba(66,133,244,0.15);color:#8ab4f8;border:1px solid rgba(66,133,244,0.35);}
-  .gps-open-link.waze{background:rgba(51,199,255,0.15);color:#33c7ff;border:1px solid rgba(51,199,255,0.35);}
   .cargando{text-align:center;color:#D8D3C6;font-size:14px;padding:24px 0;}
+  /* Autocompletado del nombre — mismo comportamiento que el del panel SIT */
+  .autocomplete-grp{position:relative;}
+  .sugerencias{display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:#1b2027;border:1px solid rgba(255,255,255,0.14);border-radius:8px;margin-top:4px;max-height:210px;overflow-y:auto;box-shadow:0 8px 20px rgba(0,0,0,0.45);}
+  .sugerencias.show{display:block;}
+  .sugerencia{padding:11px 12px;font-size:14px;color:#f8fafc;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .sugerencia:last-child{border-bottom:none;}
+  .sugerencia:hover,.sugerencia.activa{background:rgba(243,112,33,0.18);color:#F37021;}
 </style>
 </head>
 <body>
@@ -80,26 +82,17 @@
       <div class="subt">Proyecto: <strong id="nombre-proyecto"></strong></div>
       <div class="aviso">Esta información permite al Departamento de TI coordinar la instalación de internet, cámaras y wifi del proyecto. Una vez recibida, el proceso completo de instalación puede tardar de <strong>15 días a 1 mes</strong>.</div>
       <form id="form-solicitud">
-        <div class="grp"><label>Nombre de quien completa <span class="req">*</span></label><input type="text" id="f-nombre" required></div>
-        <div class="row2">
-          <div class="grp"><label>Rol <span class="req">*</span></label>
-            <select id="f-rol" required>
-              <option value="">Seleccionar...</option>
-              <option value="Encargado de Costos">Encargado de Costos</option>
-              <option value="Ingeniero">Ingeniero</option>
-              <option value="Otro">Otro</option>
-            </select>
-          </div>
-          <div class="grp"><label>Correo de contacto</label><input type="email" id="f-correo" placeholder="nombre@traesa.com"></div>
+        <div class="grp autocomplete-grp">
+          <label>Nombre de quien completa <span class="req">*</span></label>
+          <input type="text" id="f-nombre" required autocomplete="off" placeholder="Empieza a escribir tu nombre...">
+          <div class="sugerencias" id="sugerencias-nombre"></div>
         </div>
         <div class="grp"><label>Señas físicas del sitio / ubicación del contenedor principal <span class="req">*</span></label><textarea id="f-senas" required placeholder="Ej: 200m al norte de la escuela, portón verde, contenedor blanco a la entrada..."></textarea></div>
-        <div class="gps-box">
-          <button type="button" class="gps-btn" id="btn-gps">📍 Usar mi ubicación actual (parado en el sitio)</button>
-          <div class="gps-status" id="gps-status">Toca el botón estando físicamente en el sitio para capturar la ubicación automáticamente.</div>
-          <div class="gps-open-row" id="gps-open-row">
-            <a href="#" target="_blank" rel="noopener" class="gps-open-link maps" id="gps-open-maps">Ver en Google Maps</a>
-            <a href="#" target="_blank" rel="noopener" class="gps-open-link waze" id="gps-open-waze">Ver en Waze</a>
-          </div>
+        <div class="grp">
+          <label>Ubicación del sitio</label>
+          <div class="gps-nota">Se te pide permiso de ubicación para tomar las coordenadas exactas del sitio donde estás parado y generar los links de Google Maps y Waze. Así el técnico llega directo el día de la instalación. Solo se usa en este momento y únicamente para eso.</div>
+          <button type="button" class="gps-btn" id="btn-gps">📍 Actualizar ubicación de Maps y Waze</button>
+          <div class="gps-status" id="gps-status">Toca el botón estando físicamente en el sitio.</div>
         </div>
         <div class="grp"><label>Ubicación en Google Maps</label><input type="url" id="f-maps" placeholder="Se completa automático, o pega el link aquí"></div>
         <div class="grp"><label>Ubicación en Waze</label><input type="url" id="f-waze" placeholder="Se completa automático, o pega el link aquí"></div>
@@ -136,6 +129,7 @@
   // Se acepta ?proyecto= (formato nuevo) y ?page=solicitudInstalacion&proyecto=
   // (formato viejo, por si algún QR ya impreso apunta acá con esos parámetros).
   var ID_PROYECTO = params.get('proyecto') || '';
+  var COLABORADORES = [];
 
   var elCargando = document.getElementById('estado-cargando');
   var elError    = document.getElementById('estado-error');
@@ -164,6 +158,7 @@
         }
         document.getElementById('nombre-proyecto').textContent = data.nombre || '';
         document.title = 'Solicitud de Instalación — ' + (data.nombre || 'SIT TRAESA');
+        COLABORADORES = Array.isArray(data.colaboradores) ? data.colaboradores : [];
         elCargando.classList.add('hidden');
         elForm.classList.remove('hidden');
         iniciarGps();
@@ -192,10 +187,7 @@
       var wazeUrl = 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes';
       document.getElementById('f-maps').value = mapsUrl;
       document.getElementById('f-waze').value = wazeUrl;
-      document.getElementById('gps-open-maps').href = mapsUrl;
-      document.getElementById('gps-open-waze').href = wazeUrl;
-      document.getElementById('gps-open-row').className = 'gps-open-row show';
-      statusEl.textContent = '📍 Ubicación capturada (precisión ~' + acc + 'm). Puedes verificarla abajo o ajustar los links manualmente si no es exacta.';
+      statusEl.textContent = '📍 Ubicación capturada (precisión ~' + acc + 'm). Los links de abajo se actualizaron; puedes ajustarlos a mano si no quedó exacta.';
       statusEl.className = 'gps-status ok';
     }, function (err) {
       btnGps.disabled = false;
@@ -209,6 +201,48 @@
     if (navigator.geolocation) capturarUbicacionGps();
   }
 
+  // ── 2b. Autocompletado del nombre ───────────────────────────────────────────
+  var inputNombre = document.getElementById('f-nombre');
+  var cajaSugerencias = document.getElementById('sugerencias-nombre');
+
+  function normalizar(t) {
+    return t.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  }
+
+  function cerrarSugerencias() {
+    cajaSugerencias.className = 'sugerencias';
+    cajaSugerencias.innerHTML = '';
+  }
+
+  function mostrarSugerencias() {
+    var texto = normalizar(inputNombre.value);
+    if (texto.length < 2 || !COLABORADORES.length) { cerrarSugerencias(); return; }
+    var coincidencias = COLABORADORES.filter(function (n) {
+      return normalizar(n).indexOf(texto) !== -1;
+    }).slice(0, 8);
+    if (!coincidencias.length) { cerrarSugerencias(); return; }
+    cajaSugerencias.innerHTML = '';
+    coincidencias.forEach(function (nombre) {
+      var div = document.createElement('div');
+      div.className = 'sugerencia';
+      div.textContent = nombre;
+      // mousedown y no click: el blur del input dispara antes que el click y
+      // cerraría la lista sin llegar a seleccionar nada.
+      div.addEventListener('mousedown', function (ev) {
+        ev.preventDefault();
+        inputNombre.value = nombre;
+        cerrarSugerencias();
+      });
+      cajaSugerencias.appendChild(div);
+    });
+    cajaSugerencias.className = 'sugerencias show';
+  }
+
+  inputNombre.addEventListener('input', mostrarSugerencias);
+  inputNombre.addEventListener('focus', mostrarSugerencias);
+  inputNombre.addEventListener('blur', function () { setTimeout(cerrarSugerencias, 120); });
+  inputNombre.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') cerrarSugerencias(); });
+
   // ── 3. Envío ────────────────────────────────────────────────────────────────
   document.getElementById('form-solicitud').addEventListener('submit', function (ev) {
     ev.preventDefault();
@@ -220,8 +254,6 @@
 
     var datos = {
       nombreSolicitante: document.getElementById('f-nombre').value,
-      rolSolicitante: document.getElementById('f-rol').value,
-      correoSolicitante: document.getElementById('f-correo').value,
       senasFisicas: document.getElementById('f-senas').value,
       linkGoogleMaps: document.getElementById('f-maps').value,
       linkWaze: document.getElementById('f-waze').value,
