@@ -31,7 +31,15 @@
         return;
       }
       if (!params.get('activo') && !params.get('pending_id')) {
-        window.location.replace(EXEC_URL);
+        // El ticket del Portal de Servicios TI tiene que sobrevivir el salto:
+        // sin esto la redirección lo tira y quien viene del portal termina en
+        // el login igual, como si el SSO no existiera. Es un identificador de
+        // un solo uso que vive 90 s, no el token de Microsoft (ver
+        // crearTicketSSO en Código.gs).
+        var ticketPortal = params.get('ticket');
+        window.location.replace(
+          ticketPortal ? EXEC_URL + '?ticket=' + encodeURIComponent(ticketPortal) : EXEC_URL
+        );
       }
     })();
   </script>
