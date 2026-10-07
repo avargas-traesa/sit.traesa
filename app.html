@@ -23,7 +23,7 @@
       height: 100%;
     }
 
-    /* Solo se muestra si el panel no llega a cargar (ver el temporizador de abajo). */
+    /* Solo aparece si el panel no llega a cargar (ver el temporizador abajo). */
     #rescate {
       display: none;
       position: fixed;
@@ -61,29 +61,32 @@
 
 <body>
   <!--
-    Por qué el panel del SIT se carga acá dentro y no navegando a
-    script.google.com:
+    Por qué el panel se carga acá dentro y no navegando a script.google.com.
 
     Cuando el navegador tiene varias cuentas de Google abiertas, Google reescribe
-    la dirección del Apps Script de /macros/s/ID/exec a /macros/u/N/s/ID/exec para
-    la cuenta activa de esa pestaña. Si esa cuenta no es la dueña del script, la
-    página muere con el error de Google Drive "No se pudo abrir el archivo en este
-    momento" — aunque la aplicación sea de acceso anónimo y la dirección original
-    funcione perfectamente. Es un problema viejo del sitio: le salía a cualquiera
-    que entrara con una segunda cuenta de Google en el navegador.
+    la dirección del Apps Script de /macros/s/ID/exec a /macros/u/N/s/ID/exec
+    para la cuenta activa de la pestaña. Si esa cuenta no es la dueña del script,
+    la página muere con el error de Google Drive "No se pudo abrir el archivo en
+    este momento", aunque la aplicación sea de acceso anónimo y la dirección
+    original funcione. Comprobado: /macros/s/ responde 200 y /macros/u/1/s/
+    responde 404 sobre el mismo deployment. Le pasaba a cualquiera que entrara
+    con una segunda cuenta, desde que existe el sitio.
 
-    Esa reescritura solo ocurre cuando la pestaña NAVEGA a script.google.com. Si
-    el panel se carga dentro de un marco, la barra de direcciones se queda en
-    sit.traesa.com, no hay navegación que reescribir, y la cuenta activa del
-    navegador deja de importar.
+    La clave está en el atributo credentialless del marco: el panel se carga SIN
+    las cookies de Google, así que Google no ve ninguna sesión, no tiene cuenta
+    a la cual reescribir, y sirve la aplicación anónima tal como fue publicada.
 
-    El backend ya publica con XFrameOptionsMode.ALLOWALL, así que esto no
-    necesitó ningún permiso nuevo del lado del servidor.
+    Un marco normal NO alcanza — se probó primero y Google reescribía igual
+    dentro del marco. Y credentialless solo surte efecto si esta página se sirve
+    con el encabezado Cross-Origin-Embedder-Policy: credentialless, que es
+    justamente lo que hace el .htaccess de esta carpeta. Por eso este archivo
+    vive en traesa.com/sit/ y no en GitHub Pages, que no permite encabezados
+    propios.
 
-    El atributo allow NO es decorativo: sin "camera" se rompe la captura de fotos
-    de activos y de firmas, que es justo lo que más se usa desde el celular.
+    El atributo allow no es decorativo: sin "camera" se rompe la captura de
+    fotos de activos y de firmas, que es lo que más se usa desde el celular.
   -->
-  <iframe id="sit" title="SIT - Inventario Tecnológico TRAESA"
+  <iframe id="sit" credentialless title="SIT - Inventario Tecnológico TRAESA"
     allow="camera; microphone; fullscreen; clipboard-write; geolocation"></iframe>
 
   <div id="rescate">
@@ -98,18 +101,17 @@
     (function () {
       var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
 
-      // Todo lo que venga en la dirección se le pasa tal cual al panel: el
-      // ticket de entrada del Portal TI, ?activo=, ?admin=true, lo que sea.
-      // Si se perdiera acá, el portal mandaría a la gente al login igual.
+      // Se le pasa al panel la dirección completa tal cual vino: el ticket de
+      // entrada del Portal TI, ?activo=, ?admin=true, lo que sea. Si se perdiera
+      // acá, el portal mandaría a la gente al login igual.
       var destino = EXEC_URL + window.location.search;
 
       var marco = document.getElementById('sit');
       marco.src = destino;
 
-      // Escape por si el marco no carga (por ejemplo, un navegador con las
-      // cookies de terceros bloqueadas del todo). Mejor ofrecer la ruta directa
-      // que dejar una pantalla negra: con una sola cuenta de Google esa ruta
-      // funciona bien, y es exactamente lo que se hacía antes.
+      // Escape por si el marco no carga (un navegador viejo sin soporte de
+      // credentialless, por ejemplo). Con una sola cuenta de Google la ruta
+      // directa funciona bien, que es como se entraba antes.
       var listo = false;
       marco.addEventListener('load', function () { listo = true; });
 

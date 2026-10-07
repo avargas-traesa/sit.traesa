@@ -46,7 +46,13 @@
         // Se arrastra la dirección completa (search) y no solo el ticket: así
         // sirve igual para ?ticket= del Portal TI, ?admin=true y cualquier
         // parámetro que se agregue después, sin volver a tocar este archivo.
-        window.location.replace('app.html' + window.location.search);
+        //
+        // El destino vive en traesa.com y no acá porque el marco necesita que
+        // la página se sirva con el encabezado Cross-Origin-Embedder-Policy, y
+        // GitHub Pages no deja mandar encabezados propios. La copia de app.html
+        // que está en este repo es la fuente de ese archivo; lo que se publica
+        // es /public_html/sit/ en cPanel, junto a su .htaccess.
+        window.location.replace('https://traesa.com/sit/app.html' + window.location.search);
       }
     })();
   </script>
