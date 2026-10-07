@@ -33,26 +33,18 @@
         return;
       }
       if (!params.get('activo') && !params.get('pending_id')) {
-        // Se va a app.html (este mismo dominio) y NO a script.google.com.
+        // Se vuelve a la redirección directa al Apps Script.
         //
-        // Navegar al Apps Script era lo que rompía el sitio para cualquiera con
-        // más de una cuenta de Google abierta: Google reescribe la dirección a
-        // /macros/u/N/s/ID/exec para la cuenta activa de la pestaña, y si esa
-        // cuenta no es la dueña del script responde con el error de Google Drive
-        // "No se pudo abrir el archivo en este momento". app.html carga el mismo
-        // panel dentro de un marco, así la barra de direcciones se queda acá, no
-        // hay navegación que reescribir y la cuenta activa deja de importar.
-        //
-        // Se arrastra la dirección completa (search) y no solo el ticket: así
-        // sirve igual para ?ticket= del Portal TI, ?admin=true y cualquier
-        // parámetro que se agregue después, sin volver a tocar este archivo.
-        //
-        // El destino vive en traesa.com y no acá porque el marco necesita que
-        // la página se sirva con el encabezado Cross-Origin-Embedder-Policy, y
-        // GitHub Pages no deja mandar encabezados propios. La copia de app.html
-        // que está en este repo es la fuente de ese archivo; lo que se publica
-        // es /public_html/sit/ en cPanel, junto a su .htaccess.
-        window.location.replace('https://traesa.com/sit/app.html' + window.location.search);
+        // Se intentó cargar el panel en un marco credentialless desde
+        // traesa.com/sit/ para esquivar la reescritura /macros/u/N/s/ que rompe
+        // el sitio con varias cuentas de Google abiertas. Funcionó dos veces y
+        // después dejó de cargar de forma consistente (marco en blanco, sin
+        // error en consola) con exactamente el mismo HTML y los mismos
+        // encabezados, así que no es confiable para producción. El experimento
+        // quedó en app.html y en /public_html/sit/ por si se retoma, pero fuera
+        // del camino normal.
+        var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+        window.location.replace(EXEC_URL + window.location.search);
       }
     })();
   </script>
