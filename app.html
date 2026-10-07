@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SIT - Inventario Tecnológico TRAESA</title>
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0b0c10;
+    }
+
+    #sit {
+      display: block;
+      border: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Solo se muestra si el panel no llega a cargar (ver el temporizador de abajo). */
+    #rescate {
+      display: none;
+      position: fixed;
+      inset: 0;
+      padding: 2rem 1.5rem;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #rescate div {
+      max-width: 30rem;
+    }
+
+    #rescate p {
+      margin: 0 0 1.25rem;
+      line-height: 1.55;
+      color: #94a3b8;
+    }
+
+    #rescate a {
+      display: inline-block;
+      padding: 0.8rem 1.4rem;
+      border-radius: 10px;
+      background: #2563eb;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+    Por qué el panel del SIT se carga acá dentro y no navegando a
+    script.google.com:
+
+    Cuando el navegador tiene varias cuentas de Google abiertas, Google reescribe
+    la dirección del Apps Script de /macros/s/ID/exec a /macros/u/N/s/ID/exec para
+    la cuenta activa de esa pestaña. Si esa cuenta no es la dueña del script, la
+    página muere con el error de Google Drive "No se pudo abrir el archivo en este
+    momento" — aunque la aplicación sea de acceso anónimo y la dirección original
+    funcione perfectamente. Es un problema viejo del sitio: le salía a cualquiera
+    que entrara con una segunda cuenta de Google en el navegador.
+
+    Esa reescritura solo ocurre cuando la pestaña NAVEGA a script.google.com. Si
+    el panel se carga dentro de un marco, la barra de direcciones se queda en
+    sit.traesa.com, no hay navegación que reescribir, y la cuenta activa del
+    navegador deja de importar.
+
+    El backend ya publica con XFrameOptionsMode.ALLOWALL, así que esto no
+    necesitó ningún permiso nuevo del lado del servidor.
+
+    El atributo allow NO es decorativo: sin "camera" se rompe la captura de fotos
+    de activos y de firmas, que es justo lo que más se usa desde el celular.
+  -->
+  <iframe id="sit" title="SIT - Inventario Tecnológico TRAESA"
+    allow="camera; microphone; fullscreen; clipboard-write; geolocation"></iframe>
+
+  <div id="rescate">
+    <div>
+      <p>El panel está tardando más de lo normal en abrir. Puedes esperar un
+        momento más o abrirlo directamente.</p>
+      <a id="directo" href="#" target="_blank" rel="noopener">Abrir el SIT directamente</a>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+
+      // Todo lo que venga en la dirección se le pasa tal cual al panel: el
+      // ticket de entrada del Portal TI, ?activo=, ?admin=true, lo que sea.
+      // Si se perdiera acá, el portal mandaría a la gente al login igual.
+      var destino = EXEC_URL + window.location.search;
+
+      var marco = document.getElementById('sit');
+      marco.src = destino;
+
+      // Escape por si el marco no carga (por ejemplo, un navegador con las
+      // cookies de terceros bloqueadas del todo). Mejor ofrecer la ruta directa
+      // que dejar una pantalla negra: con una sola cuenta de Google esa ruta
+      // funciona bien, y es exactamente lo que se hacía antes.
+      var listo = false;
+      marco.addEventListener('load', function () { listo = true; });
+
+      document.getElementById('directo').href = destino;
+      setTimeout(function () {
+        if (!listo) {
+          document.getElementById('rescate').style.display = 'flex';
+        }
+      }, 12000);
+    })();
+  </script>
+</body>
+
+</html>

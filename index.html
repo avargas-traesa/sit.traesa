@@ -19,7 +19,9 @@
     // desde este mismo dominio), sin necesidad de pintar nada acá.
     (function () {
       var params = new URLSearchParams(window.location.search);
-      var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+      // La dirección del Apps Script ya no se usa acá: los dos caminos de abajo
+      // salen a páginas de este mismo dominio (instalacion.html y app.html).
+      // La que carga el panel vive en app.html.
       if (params.get('page') === 'solicitudInstalacion' && params.get('proyecto')) {
         // Compatibilidad con QRs/links ya repartidos con el formato viejo.
         // Ya NO se reenvía al /exec: en Android el celular terminaba en
@@ -31,15 +33,20 @@
         return;
       }
       if (!params.get('activo') && !params.get('pending_id')) {
-        // El ticket del Portal de Servicios TI tiene que sobrevivir el salto:
-        // sin esto la redirección lo tira y quien viene del portal termina en
-        // el login igual, como si el SSO no existiera. Es un identificador de
-        // un solo uso que vive 90 s, no el token de Microsoft (ver
-        // crearTicketSSO en Código.gs).
-        var ticketPortal = params.get('ticket');
-        window.location.replace(
-          ticketPortal ? EXEC_URL + '?ticket=' + encodeURIComponent(ticketPortal) : EXEC_URL
-        );
+        // Se va a app.html (este mismo dominio) y NO a script.google.com.
+        //
+        // Navegar al Apps Script era lo que rompía el sitio para cualquiera con
+        // más de una cuenta de Google abierta: Google reescribe la dirección a
+        // /macros/u/N/s/ID/exec para la cuenta activa de la pestaña, y si esa
+        // cuenta no es la dueña del script responde con el error de Google Drive
+        // "No se pudo abrir el archivo en este momento". app.html carga el mismo
+        // panel dentro de un marco, así la barra de direcciones se queda acá, no
+        // hay navegación que reescribir y la cuenta activa deja de importar.
+        //
+        // Se arrastra la dirección completa (search) y no solo el ticket: así
+        // sirve igual para ?ticket= del Portal TI, ?admin=true y cualquier
+        // parámetro que se agregue después, sin volver a tocar este archivo.
+        window.location.replace('app.html' + window.location.search);
       }
     })();
   </script>
