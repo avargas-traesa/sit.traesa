@@ -43,7 +43,16 @@
         // encabezados, así que no es confiable para producción. El experimento
         // quedó en app.html y en /public_html/sit/ por si se retoma, pero fuera
         // del camino normal.
-        var EXEC_URL = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+        // Forma de dominio Workspace (/a/macros/traesa.com/) y NO la canónica:
+        // con varias cuentas de Google abiertas, Google reescribe la canónica a
+        // /macros/u/N/s/... eligiendo un índice de cuenta; si ese índice no
+        // resuelve, responde 404 con la página de Drive "No se pudo abrir el
+        // archivo en este momento" y el SIT nunca llega a ejecutarse (pasó el
+        // 16/10 entrando desde el Portal TI, con /u/2/). Fijando el dominio se
+        // evita el índice numérico. Solo para NAVEGAR: los fetch() anónimos de
+        // más abajo siguen con la URL canónica, porque los usa gente sin cuenta
+        // de traesa (firma remota, consulta de activo).
+        var EXEC_URL = 'https://script.google.com/a/macros/traesa.com/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
         window.location.replace(EXEC_URL + window.location.search);
       }
     })();
@@ -934,6 +943,11 @@
   var TENANT_ID   = '498683cd-67e4-4bb3-a8ba-eac6f675456e';
   var REDIRECT_URI = 'https://sit.traesa.com';
   var GAS_URL     = 'https://script.google.com/macros/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
+  // Para NAVEGAR al panel se usa la forma de dominio Workspace: evita que
+  // Google reescriba la URL a /macros/u/N/s/... con un índice de cuenta que
+  // puede no resolver (error de Drive). GAS_URL se queda para los fetch()
+  // anónimos, que deben funcionar sin cuenta de traesa.
+  var PANEL_URL   = 'https://script.google.com/a/macros/traesa.com/s/AKfycbwmP64Da3SMl1h5tU67f2LeOzlQRiYBQGNIaxOMNAZYZJql0wvXuh5uUoQdbduk43x-Ew/exec';
 
 
   // ── Helpers de UI ────────────────────────────────────────────────────────
@@ -1578,7 +1592,7 @@
       btn.textContent = 'Abriendo SIT…';
       var overlay = document.getElementById('sit-loading-overlay');
       if (overlay) overlay.style.display = 'flex';
-      window.location.href = GAS_URL + (data.equipo.id ? '?activo=' + encodeURIComponent(data.equipo.id) : '');
+      window.location.href = PANEL_URL + (data.equipo.id ? '?activo=' + encodeURIComponent(data.equipo.id) : '');
     };
 
     // 9. Show details state
@@ -1747,7 +1761,7 @@
     // — el login del panel SIT ahora es interno (usuario y contraseña
     // propios, ver Código.gs/iniciarSesionUsuarioTI). Enviar directo al panel,
     // sin cargar MSAL ni mostrar la animación de "Acceso verificado".
-    window.location.href = GAS_URL;
+    window.location.href = PANEL_URL;
   } else {
     loadMSAL(0);
   }
